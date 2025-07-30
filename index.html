@@ -1,0 +1,3407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Haven - Play Games Online</title>
+   
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+    
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; 
+            color: #e2e8f0; 
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #63b3ed;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4299e1;
+        }
+
+       
+        canvas {
+            background-color: #0f172a; 
+            display: block;
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            max-width: 100%; 
+            height: auto; 
+        }
+
+        
+        #memoryGameGrid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); 
+            grid-gap: 16px;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #2d3748; 
+            border-radius: 12px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+        }
+
+        .memory-card {
+            width: 120px; 
+            height: 120px; 
+            perspective: 1000px; 
+        }
+
+        .memory-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem; 
+        }
+
+        .memory-card.flipped .memory-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .memory-card-front, .memory-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; 
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .memory-card-front {
+            background-color: #4a5568; 
+            color: #a0aec0;
+            border: 2px solid #63b3ed;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .memory-card-back {
+            background-color: #edf2f7; 
+            color: #2d3748;
+            transform: rotateY(180deg);
+        }
+
+       
+        #whackAMoleGrid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); 
+            grid-gap: 20px;
+            width: 400px; 
+            height: 400px; 
+            background-color: #4a5568;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px auto;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .mole-hole {
+            width: 100px;
+            height: 100px;
+            background-color: #2d3748; 
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: flex-end; 
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .mole {
+            font-size: 3rem; 
+            position: absolute;
+            bottom: -50px; 
+            transition: bottom 0.2s ease-out;
+        }
+
+        .mole.visible {
+            bottom: 10px;
+        }
+
+      
+        #chessCanvas {
+            border: 2px solid #4a5568;
+        }
+
+       
+        .color-button {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid #a0aec0;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-button:hover {
+            transform: scale(1.1);
+            border-color: #63b3ed;
+        }
+
+        .color-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #4a5568;
+        }
+
+        
+        #floatingAchievementMessage {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50; 
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            z-index: 1000; 
+        }
+
+        #floatingAchievementMessage.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+       
+        #mazeCanvas {
+            border: 2px solid #a0aec0; 
+            background-color: #2d3748; 
+        }
+    </style>
+</head>
+<body>
+
+   
+    <header id="mainHeader" class="w-full max-w-7xl text-center mb-12">
+        <h1 class="text-5xl sm:text-6xl font-extrabold text-blue-400 leading-tight">
+            Arcade Haven
+        </h1>
+        <p class="mt-4 text-xl sm:text-2xl text-gray-300">
+            Your daily dose of fun and excitement!
+        </p>
+    </header>
+
+   
+    <div class="flex flex-1 w-full max-w-full relative">
+      
+        <main id="gameContentWrapper" class="flex-1 transition-all duration-300">
+            <div id="gameGrid" class="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div class="bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <img src="https://placehold.co/400x250/3182CE/FFFFFF?text=Tic-Tac-Toe" alt="Tic-Tac-Toe Game Thumbnail" class="w-full h-48 object-cover rounded-t-xl">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">Tic-Tac-Toe</h2>
+                        <p class="text-gray-400 text-sm mb-4">A classic game of X's and O's. Challenge a friend or play against yourself!</p>
+                        <button onclick="showGame('ticTacToeGame')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md">
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <img src="https://placehold.co/400x250/D53F8C/FFFFFF?text=Clicker+Game" alt="Clicker Game Thumbnail" class="w-full h-48 object-cover rounded-t-xl">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">Clicker Frenzy</h2>
+                        <p class="text-gray-400 text-sm mb-4">Click as fast as you can to rack up points! Simple, addictive fun.</p>
+                        <button onclick="showGame('clickerGame')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md">
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <img src="https://placehold.co/400x250/F6AD55/FFFFFF?text=Snake+Game" alt="Snake Game Thumbnail" class="w-full h-48 object-cover rounded-t-xl">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">Classic Snake</h2>
+                        <p class="text-gray-400 text-sm mb-4">Guide your snake to eat the food and grow longer. Don't hit the walls or yourself!</p>
+                        <button onclick="showGame('snakeGame')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md">
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <img src="https://placehold.co/400x250/4299E1/FFFFFF?text=Memory+Game" alt="Memory Game Thumbnail" class="w-full h-48 object-cover rounded-t-xl">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">Memory Match</h2>
+                        <p class="text-gray-400 text-sm mb-4">Test your memory! Find all the matching pairs before time runs out.</p>
+                        <button onclick="showGame('memoryGame')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md">
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <img src="https://placehold.co/400x250/9F7AEA/FFFFFF?text=Whack-A-Mole" alt="Whack-A-Mole Game Thumbnail" class="w-full h-48 object-cover rounded-t-xl">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">Whack-A-Mole</h2>
+                        <p class="text-gray-400 text-sm mb-4">Whack the moles as they pop up to score points!</p>
+                        <button onclick="showGame('whackAMoleGame')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md">
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <img src="https://placehold.co/400x250/38B2AC/FFFFFF?text=Colour+Domination" alt="Colour Domination Game Thumbnail" class="w-full h-48 object-cover rounded-t-xl">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">Colour Domination</h2>
+                        <p class="text-gray-400 text-sm mb-4">Claim territory and merge your blocks to dominate the board! The largest block wins.</p>
+                        <button onclick="showGame('colourDominationGame')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md">
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <img src="https://placehold.co/400x250/5A67D8/FFFFFF?text=Chess" alt="Chess Game Thumbnail" class="w-full h-48 object-cover rounded-t-xl">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">Chess</h2>
+                        <p class="text-gray-400 text-sm mb-4">The ultimate strategy game. Challenge a friend and prove your tactical prowess!</p>
+                        <button onclick="showGame('chessGame')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md">
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <img src="https://placehold.co/400x250/2F855A/FFFFFF?text=Fishing+Frenzy" alt="Fishing Frenzy Game Thumbnail" class="w-full h-48 object-cover rounded-t-xl">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">Fishing Frenzy</h2>
+                        <p class="text-gray-400 text-sm mb-4">Cast your line and reel in fish for points! Master the timing to catch 'em all!</p>
+                        <button onclick="showGame('fishingFrenzyGame')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md">
+                            Play Now
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <img src="https://placehold.co/400x250/4A90E2/FFFFFF?text=Ocean+Odyssey" alt="Ocean Odyssey Game Thumbnail" class="w-full h-48 object-cover rounded-t-xl">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">Ocean Odyssey: Grow & Survive</h2>
+                        <p class="text-gray-400 text-sm mb-4">Start small, eat smaller fish to grow, and avoid bigger predators!</p>
+                        <button onclick="showGame('oceanOdysseyGame')" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md">
+                            Play Now
+                        </button>
+                    </div>
+
+                <div class="bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                    <img src="https://placehold.co/400x250/667EEA/FFFFFF?text=More+Games" alt="More Games Thumbnail" class="w-full h-48 object-cover rounded-t-xl">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold mb-2">Coming Soon!</h2>
+                        <p class="text-gray-400 text-sm mb-4">We're constantly adding new and exciting games to our collection. Stay tuned!</p>
+                        <button class="w-full bg-gray-600 cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg">
+                            Browse
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="gameContainers" class="w-full max-w-5xl flex flex-col items-center justify-center space-y-8 hidden">
+                <button onclick="showGameGrid()" class="flex items-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mb-4">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8m-11 0a9 9 0 1118 0a9 9 0 01-18 0z"></path></svg>
+                    Back to Games
+                </button>
+
+            
+                <div id="ticTacToeGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-blue-300">Tic-Tac-Toe</h2>
+                        <button onclick="toggleFullScreen('ticTacToeGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <canvas id="ticTacToeCanvas" width="300" height="300" class="border-2 border-blue-400"></canvas>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <p id="ticTacToeStatus" class="text-xl font-semibold"></p>
+                        <button onclick="resetTicTacToe()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-4 sm:mt-0">
+                            Reset Game
+                        </button>
+                    </div>
+                </div>
+
+            
+                <div id="clickerGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-pink-300">Clicker Frenzy</h2>
+                        <button onclick="toggleFullScreen('clickerGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <p class="text-5xl font-extrabold text-pink-400 mb-8">Score: <span id="clickerScore">0</span></p>
+                    <p class="text-xl font-semibold text-gray-300 mb-4">Clicks/Click: <span id="clicksPerClickDisplay">1</span> | Clicks/Second: <span id="clicksPerSecondDisplay">0</span></p>
+
+                    <button onclick="incrementScore()" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-extrabold py-6 px-12 rounded-full text-3xl transition-all duration-200 transform hover:scale-105 shadow-xl ring-4 ring-pink-300 ring-opacity-50 animate-pulse">
+                        POWER CLICK!
+                    </button>
+
+                    <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md mx-auto">
+                        <button id="buyCpcUpgrade" onclick="buyUpgrade('cpc')" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Upgrade Click Power (Cost: <span id="cpcCost">10</span>)
+                        </button>
+                        <button id="buyCpsUpgrade" onclick="buyUpgrade('cps')" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Buy Auto Clicker (Cost: <span id="cpsCost">50</span>)
+                        </button>
+                    </div>
+
+                    <button onclick="resetClicker()" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-8">
+                        Reset Game
+                    </button>
+                </div>
+
+             
+                <div id="snakeGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-orange-300">Classic Snake</h2>
+                        <button onclick="toggleFullScreen('snakeGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <canvas id="snakeCanvas" width="400" height="400" class="border-2 border-orange-400"></canvas>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <p id="snakeStatus" class="text-xl font-semibold"></p>
+                        <button onclick="startSnakeGame()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-4 sm:mt-0">
+                            Start Game
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-4">Use Arrow Keys to control the snake.</p>
+                </div>
+
+             
+                <div id="memoryGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-indigo-300">Memory Match</h2>
+                        <button onclick="toggleFullScreen('memoryGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <div id="memoryGameGrid">
+                     
+                    </div>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <p id="memoryStatus" class="text-xl font-semibold text-indigo-200"></p>
+                        <button onclick="startMemoryGame()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-4 sm:mt-0">
+                            New Game
+                        </button>
+                    </div>
+                </div>
+
+                <div id="whackAMoleGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-purple-300">Whack-A-Mole</h2>
+                        <button onclick="toggleFullScreen('whackAMoleGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <div class="text-xl font-semibold mb-4 text-purple-200">
+                        Score: <span id="whackAMoleScore">0</span> | Time: <span id="whackAMoleTime">30</span>s
+                    </div>
+                    <div id="whackAMoleGrid">
+                    </div>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <button onclick="startWhackAMoleGame()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-4 sm:mt-0">
+                            Start Game
+                        </button>
+                        <button onclick="stopWhackAMoleGame()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-4 sm:mt-0">
+                            Stop Game
+                        </button>
+                    </div>
+                </div>
+
+                <div id="colourDominationGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full max-w-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-teal-300">Colour Domination</h2>
+                        <button onclick="toggleFullScreen('colourDominationGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <canvas id="colourDominationCanvas" width="450" height="450" class="border-2 border-teal-400"></canvas>
+                    <div class="mt-4 flex flex-col items-center justify-center space-y-4">
+                        <p id="colourDominationStatus" class="text-xl font-semibold text-teal-200">Player 1 (Blue)'s Turn</p>
+                        <div id="colourChoiceButtons" class="flex flex-wrap justify-center gap-2 mt-4">
+                            
+                        </div>
+                        <button onclick="resetColourDomination()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            New Game
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-4">Player 1: Blue | Player 2: Red. Select a color to expand your territory.</p>
+                </div>
+
+            
+                <div id="chessGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full max-w-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-purple-300">Chess</h2>
+                        <button onclick="toggleFullScreen('chessGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <canvas id="chessCanvas" width="480" height="480"></canvas>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <p id="chessStatus" class="text-xl font-semibold text-purple-200">White to Move</p>
+                        <button onclick="resetChessGame()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-4 sm:mt-0">
+                            New Game
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-4">Click a piece to select, then click an empty square or opponent's piece to move/capture.</p>
+                </div>
+
+        
+                <div id="fishingFrenzyGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full max-w-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-green-300">Fishing Frenzy</h2>
+                        <button onclick="toggleFullScreen('fishingFrenzyGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <canvas id="fishingFrenzyCanvas" width="600" height="400" class="border-2 border-green-400"></canvas>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <p class="text-xl font-semibold text-green-200">Score: <span id="fishingFrenzyScore">0</span></p>
+                        <p id="fishingFrenzyStatus" class="text-xl font-semibold text-green-200">Ready to cast!</p>
+                        <button onclick="castLine()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Cast Line
+                        </button>
+                        <button onclick="resetFishingFrenzyGame()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            New Game
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-4">The hook moves automatically. Click "Cast Line" to drop it and try to catch fish!</p>
+                </div>
+
+               
+                <div id="oceanOdysseyGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full max-w-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-blue-300">Ocean Odyssey: Grow & Survive</h2>
+                        <button onclick="toggleFullScreen('oceanOdysseyGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <canvas id="oceanOdysseyCanvas" width="600" height="400" class="border-2 border-blue-400"></canvas>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <p class="text-xl font-semibold text-blue-200">Score: <span id="oceanOdysseyScore">0</span></p>
+                        <p id="oceanOdysseyStatus" class="text-xl font-semibold text-blue-200">Move your fish to eat smaller ones!</p>
+                        <button onclick="resetOceanOdysseyGame()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            New Game
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-4">Move your mouse (or finger on touch) to guide your fish. Eat smaller fish to grow!</p>
+                </div>
+
+                
+                <div id="mazeGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full max-w-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-purple-300">Maze Mania: Gorilla Quest</h2>
+                        <button onclick="toggleFullScreen('mazeGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <canvas id="mazeCanvas" width="400" height="400"></canvas>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <p id="mazeStatus" class="text-xl font-semibold text-purple-200">Level 1</p>
+                        <button onclick="startMazeGame()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-4 sm:mt-0">
+                            Start Game
+                        </button>
+                        <button onclick="resetMazeGame()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-4 sm:mt-0">
+                            Reset Level
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-4">Use Arrow Keys or swipe to navigate the 🦍 to find the 🍌! Avoid the 🦁!</p>
+                </div>
+
+             
+                <div id="deceptiveDepthsGame" class="game-section hidden bg-gray-800 p-6 rounded-xl shadow-lg text-center w-full max-w-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-yellow-300">Deceptive Depths</h2>
+                        <button onclick="toggleFullScreen('deceptiveDepthsGame')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+                            Full Screen
+                        </button>
+                    </div>
+                    <canvas id="deceptiveDepthsCanvas" width="800" height="400"></canvas>
+                    <div class="mt-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                        <p id="deceptiveDepthsStatus" class="text-xl font-semibold text-yellow-200">Ready</p>
+                        <button onclick="ddStartDeceptiveDepthsGame()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-4 sm:mt-0">
+                            Start Game
+                        </button>
+                        <button onclick="ddResetDeceptiveDepthsGame()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 mt-4 sm:mt-0">
+                            Restart Level
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-4">Use Arrow Keys or A/D to move, Up Arrow/W to jump. Avoid traps!</p>
+                </div>
+
+            </div>
+        </main>
+
+     
+        <aside id="achievementsSidebar" class="fixed right-0 top-0 bottom-0 w-80 bg-gray-900 border-l border-gray-700 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-40 p-4 overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-3xl font-bold text-yellow-400">Achievements</h3>
+                <button onclick="toggleAchievementsSidebar()" class="text-gray-400 hover:text-white transition-colors duration-200 text-2xl font-bold">&times;</button>
+            </div>
+            <ul id="achievementsList" class="space-y-4">
+            
+            </ul>
+        </aside>
+
+        <button id="achievementsToggleBtn" onclick="toggleAchievementsSidebar()" class="fixed top-24 right-4 bg-yellow-500 hover:bg-yellow-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 z-50">
+            🏆
+        </button>
+    </div>
+
+    <div id="floatingAchievementMessage" class="hidden">
+        <span>🏆</span>
+        <span id="floatingAchievementText"></span>
+    </div>
+
+    <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-700 p-8 rounded-lg shadow-lg max-w-sm w-full text-center">
+            <h3 id="messageTitle" class="text-2xl font-bold text-white mb-4"></h3>
+            <p id="messageContent" class="text-gray-300 mb-6"></p>
+            <button id="messageBoxCloseBtn" onclick="hideMessageBox()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-300">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <footer class="w-full max-w-7xl text-center mt-12 py-6 border-t border-gray-700">
+        <p class="text-gray-500 text-sm">&copy; 2025 Arcade Haven. All rights reserved.</p>
+    </footer>
+
+    <script>
+
+        const gameGrid = document.getElementById('gameGrid');
+        const gameContainers = document.getElementById('gameContainers');
+        const mainHeader = document.getElementById('mainHeader');
+        const allGameSections = document.querySelectorAll('.game-section');
+
+        function showGame(gameId) {
+            
+            gameGrid.classList.add('hidden');
+            mainHeader.classList.add('hidden');
+    
+            gameContainers.classList.remove('hidden');
+            allGameSections.forEach(section => section.classList.add('hidden'));
+
+            
+            const selectedGame = document.getElementById(gameId);
+            if (selectedGame) {
+                selectedGame.classList.remove('hidden');
+                
+                switch (gameId) {
+                    case 'ticTacToeGame':
+                        resetTicTacToe();
+                        break;
+                    case 'clickerGame':
+                        resetClicker();
+                        startClickerGameLoop();
+                        break;
+                    case 'snakeGame':
+                      
+                        break;
+                    case 'memoryGame':
+                        startMemoryGame(); 
+                        break;
+                    case 'whackAMoleGame':
+                        stopWhackAMoleGame(); 
+                        break;
+                    case 'colourDominationGame':
+                        resetColourDomination(); 
+                        break;
+                    case 'chessGame':
+                        resetChessGame(); 
+                        break;
+                    case 'fishingFrenzyGame':
+                        resetFishingFrenzyGame(); 
+                        break;
+                    case 'oceanOdysseyGame':
+                        resetOceanOdysseyGame(); 
+                        break;
+                    case 'mazeGame':
+                        resetMazeGame();
+                        break;
+                    case 'deceptiveDepthsGame':
+                    
+                        break;
+                }
+            }
+        }
+
+        function showGameGrid() {
+            
+            gameContainers.classList.add('hidden');
+            gameGrid.classList.remove('hidden');
+            mainHeader.classList.remove('hidden');
+
+           
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+
+            stopSnakeGame();
+            stopWhackAMoleGame();
+            stopFishingFrenzyGame(); 
+            stopOceanOdysseyGame(); 
+            stopClickerGameLoop(); 
+            stopMazeGame(); 
+            ddStopDeceptiveDepthsGame(); 
+        }
+
+        function toggleFullScreen(elementId) {
+            const element = document.getElementById(elementId);
+            if (!document.fullscreenElement) {
+                if (element.requestFullscreen) {
+                    element.requestFullscreen();
+                } else if (element.mozRequestFullScreen) { 
+                    element.mozRequestFullScreen();
+                } else if (element.webkitRequestFullscreen) { 
+                    element.webkitRequestFullscreen();
+                } else if (element.msRequestFullscreen) { 
+                    element.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.mozCancelFullScreen) { 
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) { 
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { 
+                    element.msExitFullscreen();
+                }
+            }
+        }
+
+       
+        let messageBoxCallback = null; 
+
+        function showMessageBox(title, content, callback = null) {
+            const messageTitle = document.getElementById('messageTitle');
+            const messageContent = document.getElementById('messageContent');
+            const messageBox = document.getElementById('messageBox');
+
+            messageTitle.textContent = title;
+            messageContent.textContent = content;
+            messageBoxCallback = callback; 
+            messageBox.classList.remove('hidden');
+        }
+
+        function hideMessageBox() {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.classList.add('hidden');
+            if (messageBoxCallback) {
+                messageBoxCallback(); 
+                messageBoxCallback = null; 
+            }
+        }
+
+        const achievementsData = [
+            { id: 'firstClick', name: 'First Click!', description: 'Click the main button once in Clicker Frenzy.', unlocked: false, game: 'clicker' },
+            { id: 'hundredClicks', name: 'Click Tycoon', description: 'Reach 100 total clicks in Clicker Frenzy.', unlocked: false, game: 'clicker' },
+            { id: 'firstCpsUpgrade', name: 'Automaton Ascendant', description: 'Purchase your first Auto Clicker upgrade.', unlocked: false, game: 'clicker' },
+            { id: 'snakeFoodie', name: 'Snake Nibbler', description: 'Eat 5 food in Classic Snake.', unlocked: false, game: 'snake' },
+            { id: 'snakeMaster', name: 'Serpentine Sovereign', description: 'Reach a score of 20 in Classic Snake.', unlocked: false, game: 'snake' },
+            { id: 'tictactoeWinner', name: 'Tic-Tac-Toe Triumph', description: 'Win your first game of Tic-Tac-Toe.', unlocked: false, game: 'ticTacToe' },
+            { id: 'oceanExplorer', name: 'Ocean Novice', description: 'Eat 10 smaller fish in Ocean Odyssey.', unlocked: false, game: 'oceanOdyssey' },
+               ];
+
+        const achievementsSidebar = document.getElementById('achievementsSidebar');
+        const achievementsList = document.getElementById('achievementsList');
+        const floatingAchievementMessage = document.getElementById('floatingAchievementMessage');
+        const floatingAchievementText = document.getElementById('floatingAchievementText');
+
+        function toggleAchievementsSidebar() {
+            if (achievementsSidebar.classList.contains('translate-x-full')) {
+                achievementsSidebar.classList.remove('translate-x-full');
+                achievementsSidebar.classList.add('translate-x-0');
+            } else {
+                achievementsSidebar.classList.remove('translate-x-0');
+                achievementsSidebar.classList.add('translate-x-full');
+            }
+        }
+
+        function renderAchievements() {
+            achievementsList.innerHTML = '';
+            achievementsData.forEach(ach => {
+                const li = document.createElement('li');
+                li.classList.add('flex', 'items-center', 'p-3', 'rounded-lg', 'shadow-md', ach.unlocked ? 'bg-green-700' : 'bg-gray-700', 'transition-colors', 'duration-200');
+                li.innerHTML = `
+                    <span class="text-3xl mr-4">${ach.unlocked ? '✅' : '🔒'}</span>
+                    <div>
+                        <h4 class="font-bold text-lg">${ach.name}</h4>
+                        <p class="text-gray-300 text-sm">${ach.description}</p>
+                    </div>
+                `;
+                achievementsList.appendChild(li);
+            });
+        }
+
+        let floatingMessageTimeout;
+
+        function showFloatingAchievementMessage(name) {
+            floatingAchievementText.textContent = `${name} UNLOCKED!`;
+            floatingAchievementMessage.classList.remove('hidden');
+            floatingAchievementMessage.classList.add('show');
+
+            clearTimeout(floatingMessageTimeout); 
+            floatingMessageTimeout = setTimeout(() => {
+                floatingAchievementMessage.classList.remove('show');
+                
+                setTimeout(() => {
+                    floatingAchievementMessage.classList.add('hidden');
+                }, 300); 
+            }, 3000); 
+        }
+
+        function unlockAchievement(id) {
+            const achievement = achievementsData.find(ach => ach.id === id);
+            if (achievement && !achievement.unlocked) {
+                achievement.unlocked = true;
+                showFloatingAchievementMessage(achievement.name); 
+                renderAchievements(); 
+            }
+        }
+
+        const ticTacToeCanvas = document.getElementById('ticTacToeCanvas');
+        const ticTacToeCtx = ticTacToeCanvas.getContext('2d');
+        const ticTacToeStatus = document.getElementById('ticTacToeStatus');
+
+        let board = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = 'X';
+        let gameActive = true;
+
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],  
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],  
+            [0, 4, 8], [2, 4, 6]             
+        ];
+
+        function drawTicTacToeBoard() {
+            ticTacToeCtx.clearRect(0, 0, ticTacToeCanvas.width, ticTacToeCanvas.height);
+            ticTacToeCtx.strokeStyle = '#63b3ed'; 
+            ticTacToeCtx.lineWidth = 4;
+
+          
+            ticTacToeCtx.beginPath();
+            ticTacToeCtx.moveTo(ticTacToeCanvas.width / 3, 0);
+            ticTacToeCtx.lineTo(ticTacToeCanvas.width / 3, ticTacToeCanvas.height);
+            ticTacToeCtx.moveTo(ticTacToeCanvas.width * 2 / 3, 0);
+            ticTacToeCtx.lineTo(ticTacToeCanvas.width * 2 / 3, ticTacToeCanvas.height);
+
+            ticTacToeCtx.moveTo(0, ticTacToeCanvas.height / 3);
+            ticTacToeCtx.lineTo(ticTacToeCanvas.width, ticTacToeCanvas.height / 3);
+            ticTacToeCtx.moveTo(0, ticTacToeCanvas.height * 2 / 3);
+            ticTacToeCtx.lineTo(ticTacToeCanvas.width, ticTacToeCanvas.height * 2 / 3);
+            ticTacToeCtx.stroke();
+
+           
+            for (let i = 0; i < 9; i++) {
+                const cellX = (i % 3) * (ticTacToeCanvas.width / 3) + (ticTacToeCanvas.width / 6);
+                const cellY = Math.floor(i / 3) * (ticTacToeCanvas.height / 3) + (ticTacToeCanvas.height / 6);
+
+                ticTacToeCtx.font = '72px Inter';
+                ticTacToeCtx.textAlign = 'center';
+                ticTacToeCtx.textBaseline = 'middle';
+
+                if (board[i] === 'X') {
+                    ticTacToeCtx.fillStyle = '#63b3ed'; 
+                    ticTacToeCtx.fillText('X', cellX, cellY);
+                } else if (board[i] === 'O') {
+                    ticTacToeCtx.fillStyle = '#f6ad55'; 
+                    ticTacToeCtx.fillText('O', cellX, cellY);
+                }
+            }
+        }
+
+        function handleTicTacToeClick(event) {
+            if (!gameActive) return;
+
+            const rect = ticTacToeCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const col = Math.floor(x / (ticTacToeCanvas.width / 3));
+            const row = Math.floor(y / (ticTacToeCanvas.height / 3));
+            const clickedCell = row * 3 + col;
+
+            if (board[clickedCell] === '') {
+                board[clickedCell] = currentPlayer;
+                drawTicTacToeBoard();
+                checkTicTacToeResult();
+                if (gameActive) { 
+                    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                    ticTacToeStatus.textContent = `Player ${currentPlayer}'s Turn`;
+                    ticTacToeStatus.style.color = currentPlayer === 'X' ? '#63b3ed' : '#f6ad55';
+                }
+            }
+        }
+
+        function checkTicTacToeResult() {
+            let roundWon = false;
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = board[winCondition[0]];
+                let b = board[winCondition[1]];
+                let c = board[winCondition[2]];
+
+                if (a === '' || b === '' || c === '') {
+                    continue;
+                }
+                if (a === b && b === c) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                ticTacToeStatus.textContent = `Player ${currentPlayer} Wins!`;
+                ticTacToeStatus.style.color = currentPlayer === 'X' ? '#63b3ed' : '#f6ad55';
+                gameActive = false;
+                unlockAchievement('tictactoeWinner'); 
+                return;
+            }
+
+            let roundDraw = !board.includes('');
+            if (roundDraw) {
+                ticTacToeStatus.textContent = 'Game Draw!';
+                ticTacToeStatus.style.color = '#cbd5e0'; 
+                gameActive = false;
+                return;
+            }
+        }
+
+        function resetTicTacToe() {
+            board = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            gameActive = true;
+            ticTacToeStatus.textContent = `Player ${currentPlayer}'s Turn`;
+            ticTacToeStatus.style.color = '#63b3ed';
+            drawTicTacToeBoard();
+        }
+
+        ticTacToeCanvas.addEventListener('click', handleTicTacToeClick);
+
+        
+        let clickerScore = 0;
+        let clicksPerClick = 1;
+        let clicksPerSecond = 0;
+        let autoClickerIntervalId;
+
+        const UPGRADES = {
+            cpc: {
+                name: "Click Power",
+                baseCost: 10,
+                costMultiplier: 1.5,
+                effectValue: 1, 
+                level: 0
+            },
+            cps: {
+                name: "Auto Clicker",
+                baseCost: 50,
+                costMultiplier: 2,
+                effectValue: 1,
+                level: 0
+            }
+        };
+
+        const clickerScoreDisplay = document.getElementById('clickerScore');
+        const clicksPerClickDisplay = document.getElementById('clicksPerClickDisplay');
+        const clicksPerSecondDisplay = document.getElementById('clicksPerSecondDisplay');
+        const buyCpcUpgradeButton = document.getElementById('buyCpcUpgrade');
+        const buyCpsUpgradeButton = document.getElementById('buyCpsUpgrade');
+        const cpcCostDisplay = document.getElementById('cpcCost');
+        const cpsCostDisplay = document.getElementById('cpsCost');
+
+        function updateClickerDisplay() {
+            clickerScoreDisplay.textContent = clickerScore;
+            clicksPerClickDisplay.textContent = clicksPerClick;
+            clicksPerSecondDisplay.textContent = clicksPerSecond;
+
+            
+            const cpcNextCost = Math.floor(UPGRADES.cpc.baseCost * (UPGRADES.cpc.costMultiplier ** UPGRADES.cpc.level));
+            cpcCostDisplay.textContent = cpcNextCost;
+            buyCpcUpgradeButton.disabled = clickerScore < cpcNextCost;
+            buyCpcUpgradeButton.textContent = `Upgrade Click Power (Cost: ${cpcNextCost})`;
+
+
+            const cpsNextCost = Math.floor(UPGRADES.cps.baseCost * (UPGRADES.cps.costMultiplier ** UPGRADES.cps.level));
+            cpsCostDisplay.textContent = cpsNextCost;
+            buyCpsUpgradeButton.disabled = clickerScore < cpsNextCost;
+            buyCpsUpgradeButton.textContent = `Buy Auto Clicker (Cost: ${cpsNextCost})`;
+        }
+
+        function incrementScore() {
+            clickerScore += clicksPerClick;
+            updateClickerDisplay();
+            if (clickerScore >= 1) unlockAchievement('firstClick'); 
+            if (clickerScore >= 100) unlockAchievement('hundredClicks'); 
+        }
+
+        function buyUpgrade(type) {
+            const upgrade = UPGRADES[type];
+            const cost = Math.floor(upgrade.baseCost * (upgrade.costMultiplier ** upgrade.level));
+
+            if (clickerScore >= cost) {
+                clickerScore -= cost;
+                upgrade.level++;
+
+                if (type === 'cpc') {
+                    clicksPerClick += upgrade.effectValue;
+                    showMessageBox('Upgrade Purchased!', `Your clicks now generate +${upgrade.effectValue} more per click! Current CPC: ${clicksPerClick}`);
+                } else if (type === 'cps') {
+                    clicksPerSecond += upgrade.effectValue;
+                    stopClickerGameLoop(); 
+                    startClickerGameLoop();
+                    showMessageBox('Upgrade Purchased!', `You now have an auto-clicker generating +${upgrade.effectValue} clicks per second! Current CPS: ${clicksPerSecond}`);
+                    unlockAchievement('firstCpsUpgrade'); 
+                }
+                updateClickerDisplay();
+            } else {
+                showMessageBox('Not Enough Score!', `You need ${cost - clickerScore} more clicks to buy this upgrade.`);
+            }
+        }
+
+        function startClickerGameLoop() {
+            stopClickerGameLoop(); 
+            if (clicksPerSecond > 0) {
+                autoClickerIntervalId = setInterval(() => {
+                    clickerScore += clicksPerSecond;
+                    updateClickerDisplay();
+                }, 1000); 
+            }
+        }
+
+        function stopClickerGameLoop() {
+            if (autoClickerIntervalId) {
+                clearInterval(autoClickerIntervalId);
+                autoClickerIntervalId = null;
+            }
+        }
+
+        function resetClicker() {
+            clickerScore = 0;
+            clicksPerClick = 1;
+            clicksPerSecond = 0;
+            stopClickerGameLoop(); 
+            UPGRADES.cpc.level = 0;
+            UPGRADES.cps.level = 0;
+            updateClickerDisplay(); 
+        }
+
+      
+        const snakeCanvas = document.getElementById('snakeCanvas');
+        const snakeCtx = snakeCanvas.getContext('2d');
+        const snakeStatus = document.getElementById('snakeStatus');
+
+        const gridSize = 20; 
+        let snake = [{ x: 10, y: 10 }];
+        let food = {};
+        let direction = 'right';
+        let score = 0;
+        let gameLoopInterval;
+        let isSnakeGameActive = false;
+
+        function generateFood() {
+            food = {
+                x: Math.floor(Math.random() * (snakeCanvas.width / gridSize)),
+                y: Math.floor(Math.random() * (snakeCanvas.height / gridSize))
+            };
+            
+            for (let i = 0; i < snake.length; i++) {
+                if (snake[i].x === food.x && snake[i].y === food.y) {
+                    generateFood(); 
+                    return;
+                }
+            }
+        }
+
+        function drawSnake() {
+            snakeCtx.clearRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+
+            
+            snakeCtx.fillStyle = '#f6ad55'; 
+            snakeCtx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+
+            
+            for (let i = 0; i < snake.length; i++) {
+                snakeCtx.fillStyle = i === 0 ? '#48bb78' : '#68d391'; 
+                snakeCtx.fillRect(snake[i].x * gridSize, snake[i].y * gridSize, gridSize, gridSize);
+                snakeCtx.strokeStyle = '#2d3748'; 
+                snakeCtx.strokeRect(snake[i].x * gridSize, snake[i].y * gridSize, gridSize, gridSize);
+            }
+        }
+
+        function updateSnake() {
+            if (!isSnakeGameActive) return;
+
+            const head = { x: snake[0].x, y: snake[0].y };
+
+            switch (direction) {
+                case 'up': head.y--; break;
+                case 'down': head.y++; break;
+                case 'left': head.x--; break;
+                case 'right': head.x++; break;
+            }
+
+            
+            if (head.x < 0 || head.x * gridSize >= snakeCanvas.width ||
+                head.y < 0 || head.y * gridSize >= snakeCanvas.height) {
+                gameOverSnake();
+                return;
+            }
+
+            
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    gameOverSnake();
+                    return;
+                }
+            }
+
+            snake.unshift(head); 
+
+           
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                snakeStatus.textContent = `Score: ${score}`;
+                generateFood();
+                if (score >= 5) unlockAchievement('snakeFoodie'); 
+                if (score >= 20) unlockAchievement('snakeMaster'); 
+            } else {
+                snake.pop(); 
+            }
+
+            drawSnake();
+        }
+
+        function changeDirection(event) {
+            const keyPressed = event.keyCode;
+            const LEFT = 37, UP = 38, RIGHT = 39, DOWN = 40;
+
+           
+            if (keyPressed === LEFT && direction !== 'right') direction = 'left';
+            if (keyPressed === UP && direction !== 'down') direction = 'up';
+            if (keyPressed === RIGHT && direction !== 'left') direction = 'right';
+            if (keyPressed === DOWN && direction !== 'up') direction = 'down';
+        }
+
+        
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        snakeCanvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        snakeCanvas.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+
+            
+            if (Math.abs(dx) > Math.abs(dy)) { 
+                if (dx > 0 && direction !== 'left') direction = 'right';
+                else if (dx < 0 && direction !== 'right') direction = 'left';
+            } else {
+                if (dy > 0 && direction !== 'up') direction = 'down';
+                else if (dy < 0 && direction !== 'down') direction = 'up';
+            }
+        });
+
+
+        function startSnakeGame() {
+            if (isSnakeGameActive) return; 
+            snake = [{ x: 10, y: 10 }];
+            direction = 'right';
+            score = 0;
+            snakeStatus.textContent = `Score: ${score}`;
+            generateFood();
+            drawSnake();
+            isSnakeGameActive = true;
+            gameLoopInterval = setInterval(updateSnake, 100);
+            document.addEventListener('keydown', changeDirection);
+        }
+
+        function gameOverSnake() {
+            clearInterval(gameLoopInterval);
+            isSnakeGameActive = false;
+            snakeStatus.textContent = `Game Over! Final Score: ${score}`;
+            showMessageBox('Game Over!', `You hit a wall or yourself! Your final score was ${score}.`);
+            document.removeEventListener('keydown', changeDirection);
+        }
+
+        function stopSnakeGame() {
+            clearInterval(gameLoopInterval);
+            isSnakeGameActive = false;
+            
+        }
+
+       
+        const memoryGameGrid = document.getElementById('memoryGameGrid');
+        const memoryStatus = document.getElementById('memoryStatus');
+        const memoryEmojis = ['🍎', '🍌', '🍒', '🍓', '🍋', '🍇', '🍉', '🍑']; // 8 pairs
+        let memoryCards = [];
+        let flippedCards = [];
+        let matchesFound = 0;
+        let canFlip = true;
+
+        function initializeMemoryGame() {
+            
+            memoryCards = [...memoryEmojis, ...memoryEmojis];
+            
+            memoryCards.sort(() => Math.random() - 0.5);
+
+            memoryGameGrid.innerHTML = '';
+            matchesFound = 0;
+            flippedCards = [];
+            canFlip = true;
+            memoryStatus.textContent = 'Match all pairs!';
+
+            memoryCards.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.classList.add('memory-card');
+                card.dataset.emoji = emoji;
+                card.dataset.index = index;
+                card.innerHTML = `
+                    <div class="memory-card-inner">
+                        <div class="memory-card-front">?</div>
+                        <div class="memory-card-back">${emoji}</div>
+                    </div>
+                `;
+                card.addEventListener('click', flipCard);
+                memoryGameGrid.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (!canFlip || flippedCards.length === 2 || this.classList.contains('flipped')) {
+                return;
+            }
+
+            this.classList.add('flipped');
+            flippedCards.push(this);
+
+            if (flippedCards.length === 2) {
+                canFlip = false; 
+                setTimeout(checkForMatch, 1000);
+            }
+        }
+
+        function checkForMatch() {
+            const [card1, card2] = flippedCards;
+            const emoji1 = card1.dataset.emoji;
+            const emoji2 = card2.dataset.emoji;
+
+            if (emoji1 === emoji2) {
+                
+                matchesFound++;
+                card1.removeEventListener('click', flipCard);
+                card2.removeEventListener('click', flipCard);
+                memoryStatus.textContent = `Matches: ${matchesFound}/${memoryEmojis.length}`;
+
+                if (matchesFound === memoryEmojis.length) {
+                   
+                    showMessageBox('Congratulations!', 'You found all the pairs!');
+                    memoryStatus.textContent = 'Game Over! You won!';
+                }
+            } else {
+                
+                card1.classList.remove('flipped');
+                card2.classList.remove('flipped');
+            }
+
+            flippedCards = []; 
+            canFlip = true; 
+        }
+
+        function startMemoryGame() {
+            initializeMemoryGame();
+        }
+
+        
+        const whackAMoleGrid = document.getElementById('whackAMoleGrid');
+        const whackAMoleScoreDisplay = document.getElementById('whackAMoleScore');
+        const whackAMoleTimeDisplay = document.getElementById('whackAMoleTime');
+        const moles = []; 
+        const moleIntervals = []; 
+        let whackAMoleScore = 0;
+        let whackAMoleTime = 30; 
+        let whackAMoleTimer;
+        let isWhackAMoleGameActive = false;
+
+        function createMoleHoles() {
+            whackAMoleGrid.innerHTML = '';
+            moles.length = 0; 
+            for (let i = 0; i < 9; i++) { 
+                const hole = document.createElement('div');
+                hole.classList.add('mole-hole');
+                const mole = document.createElement('div');
+                mole.classList.add('mole');
+                mole.textContent = '🙈';
+                mole.addEventListener('click', whackMole);
+                hole.appendChild(mole);
+                moles.push(mole);
+                whackAMoleGrid.appendChild(hole);
+            }
+        }
+
+        function randomMole() {
+            const hiddenMoles = moles.filter(m => !m.classList.contains('visible'));
+            if (hiddenMoles.length === 0) return; 
+
+            const randomMole = hiddenMoles[Math.floor(Math.random() * hiddenMoles.length)];
+            randomMole.classList.add('visible');
+
+            const disappearTime = Math.random() * 1000 + 500; 
+            setTimeout(() => {
+                randomMole.classList.remove('visible');
+            }, disappearTime);
+        }
+
+        function whackMole(event) {
+            if (!isWhackAMoleGameActive) return;
+            const clickedMole = event.target;
+            if (clickedMole.classList.contains('visible')) {
+                whackAMoleScore++;
+                whackAMoleScoreDisplay.textContent = whackAMoleScore;
+                clickedMole.classList.remove('visible'); 
+            }
+        }
+
+        function startWhackAMoleGame() {
+            if (isWhackAMoleGameActive) {
+                showMessageBox('Game Running', 'Whack-A-Mole is already in progress!');
+                return;
+            }
+
+            whackAMoleScore = 0;
+            whackAMoleTime = 30;
+            whackAMoleScoreDisplay.textContent = whackAMoleScore;
+            whackAMoleTimeDisplay.textContent = whackAMoleTime;
+            isWhackAMoleGameActive = true;
+            createMoleHoles(); 
+            
+            for (let i = 0; i < 3; i++) { 
+                moleIntervals.push(setInterval(randomMole, 700 + Math.random() * 300));
+            }
+
+
+            whackAMoleTimer = setInterval(() => {
+                whackAMoleTime--;
+                whackAMoleTimeDisplay.textContent = whackAMoleTime;
+                if (whackAMoleTime <= 0) {
+                    stopWhackAMoleGame();
+                    showMessageBox('Time\'s Up!', `Your final score is ${whackAMoleScore}!`);
+                }
+            }, 1000);
+            showMessageBox('Game Started!', 'Whack those moles!');
+        }
+
+        function stopWhackAMoleGame() {
+            clearInterval(whackAMoleTimer);
+            moleIntervals.forEach(interval => clearInterval(interval));
+            moleIntervals.length = 0; 
+            isWhackAMoleGameActive = false;
+            moles.forEach(mole => mole.classList.remove('visible')); 
+            whackAMoleTimeDisplay.textContent = '30';
+            whackAMoleScoreDisplay.textContent = '0';
+        }
+
+        
+        const colourDominationCanvas = document.getElementById('colourDominationCanvas');
+        const colourDominationCtx = colourDominationCanvas.getContext('2d');
+        const colourDominationStatus = document.getElementById('colourDominationStatus');
+        const colourChoiceButtonsDiv = document.getElementById('colourChoiceButtons');
+
+        const CD_GRID_SIZE = 15; 
+        const CD_CELL_SIZE = colourDominationCanvas.width / CD_GRID_SIZE;
+
+       
+        const CD_PLAYER1_COLOR = '#63b3ed'; 
+        const CD_PLAYER2_COLOR = '#e53e3e';  
+
+        
+        const CD_NEUTRAL_COLORS_ARRAY = [
+            '#FFD700', 
+            '#32CD32', 
+            '#9370DB', 
+            '#00FFFF', 
+            '#FF7F50', 
+            '#808080'  
+        ];
+
+        let cdBoard = [];
+        let cdCurrentPlayerColor = CD_PLAYER1_COLOR;
+        let cdGameActive = true;
+        let cdCellsFilled = 0; 
+
+       
+        function cdOpponentColor(playerColor) {
+            return playerColor === CD_PLAYER1_COLOR ? CD_PLAYER2_COLOR : CD_PLAYER1_COLOR;
+        }
+
+        
+        function initColourDominationBoard() {
+            cdBoard = Array(CD_GRID_SIZE).fill(0).map(() => Array(CD_GRID_SIZE).fill(null));
+
+            
+            for (let r = 0; r < CD_GRID_SIZE; r++) {
+                for (let c = 0; c < CD_GRID_SIZE; c++) {
+                    cdBoard[r][c] = CD_NEUTRAL_COLORS_ARRAY[Math.floor(Math.random() * CD_NEUTRAL_COLORS_ARRAY.length)];
+                }
+            }
+
+            
+            cdBoard[0][0] = CD_PLAYER1_COLOR;
+            cdBoard[CD_GRID_SIZE - 1][CD_GRID_SIZE - 1] = CD_PLAYER2_COLOR;
+
+            cdCurrentPlayerColor = CD_PLAYER1_COLOR;
+            cdGameActive = true;
+            drawColourDominationBoard();
+            updateColourDominationStatus(); 
+        }
+
+        function drawColourDominationBoard() {
+            colourDominationCtx.clearRect(0, 0, colourDominationCanvas.width, colourDominationCanvas.height);
+
+            for (let row = 0; row < CD_GRID_SIZE; row++) {
+                for (let col = 0; col < CD_GRID_SIZE; col++) {
+                    const cellColor = cdBoard[row][col];
+                    colourDominationCtx.fillStyle = cellColor;
+                    colourDominationCtx.fillRect(col * CD_CELL_SIZE, row * CD_CELL_SIZE, CD_CELL_SIZE, CD_CELL_SIZE);
+                    colourDominationCtx.strokeStyle = '#1a202c'; 
+                    colourDominationCtx.strokeRect(col * CD_CELL_SIZE, row * CD_CELL_SIZE, CD_CELL_SIZE, CD_CELL_SIZE);
+                }
+            }
+        }
+
+        
+        function performInvasion(targetColor) {
+            let cellsToVisit = [];
+            let visited = Array(CD_GRID_SIZE).fill(0).map(() => Array(CD_GRID_SIZE).fill(false));
+            let cellsToConvertCount = 0;
+
+            for (let r = 0; r < CD_GRID_SIZE; r++) {
+                for (let c = 0; c < CD_GRID_SIZE; c++) {
+                    if (cdBoard[r][c] === cdCurrentPlayerColor) {
+                        cellsToVisit.push({ r, c });
+                        visited[r][c] = true;
+                    }
+                }
+            }
+
+            const directions = [
+                [-1, 0], [1, 0], [0, -1], [0, 1]
+            ];
+
+            let head = 0;
+            while (head < cellsToVisit.length) {
+                const { r, c } = cellsToVisit[head++]; 
+
+                for (const [dr, dc] of directions) {
+                    const nr = r + dr;
+                    const nc = c + dc;
+
+                    if (nr >= 0 && nr < CD_GRID_SIZE && nc >= 0 && nc < CD_GRID_SIZE && !visited[nr][nc]) {
+                        if (cdBoard[nr][nc] === targetColor) {
+                           
+                            cellsToConvertCount++;
+                            visited[nr][nc] = true;
+                            cellsToVisit.push({ r: nr, c: nc }); 
+                            cdBoard[nr][nc] = cdCurrentPlayerColor; 
+                        }
+                    }
+                }
+            }
+            return cellsToConvertCount > 0; 
+        }
+
+        function getAvailableColorsForPlayer(playerColor) {
+            const availableColors = new Set();
+            let visitedPlayerCells = Array(CD_GRID_SIZE).fill(0).map(() => Array(CD_GRID_SIZE).fill(false));
+            const playerQueue = [];
+
+            for (let r = 0; r < CD_GRID_SIZE; r++) {
+                for (let c = 0; c < CD_GRID_SIZE; c++) {
+                    if (cdBoard[r][c] === playerColor) {
+                        playerQueue.push({ r, c });
+                        visitedPlayerCells[r][c] = true;
+                    }
+                }
+            }
+
+            const directions = [
+                [-1, 0], [1, 0], [0, -1], [0, 1]
+            ];
+
+            let head = 0;
+            while(head < playerQueue.length) {
+                const { r, c } = playerQueue[head++];
+
+                for (const [dr, dc] of directions) {
+                    const nr = r + dr;
+                    const nc = c + dc;
+
+                    if (nr >= 0 && nr < CD_GRID_SIZE && nc >= 0 && nc < CD_GRID_SIZE && !visitedPlayerCells[nr][nc]) {
+                        const neighborColor = cdBoard[nr][nc];
+                        if (neighborColor === playerColor) {
+                            
+                            visitedPlayerCells[nr][nc] = true;
+                            playerQueue.push({ r: nr, c: nc });
+                        } else if (CD_NEUTRAL_COLORS_ARRAY.includes(neighborColor)) {
+                            
+                            availableColors.add(neighborColor);
+                        }
+                    }
+                }
+            }
+            return Array.from(availableColors);
+        }
+
+        function handleColourSelection(selectedColor) {
+            if (!cdGameActive) return;
+
+            const playerColor = cdCurrentPlayerColor;
+            const opponentColor = cdOpponentColor(playerColor);
+
+            const cellsConverted = performInvasion(selectedColor);
+
+            if (!cellsConverted) {
+                
+                showMessageBox('Invalid Move', 'You cannot absorb this color, or it is not adjacent to your territory.');
+                return;
+            }
+
+            drawColourDominationBoard();
+            switchPlayerTurn();
+            checkGameEnd();
+        }
+
+        function switchPlayerTurn() {
+            cdCurrentPlayerColor = cdOpponentColor(cdCurrentPlayerColor);
+            updateColourDominationStatus();
+        }
+
+        function updateColourDominationStatus() {
+            let statusText = `Player ${cdCurrentPlayerColor === CD_PLAYER1_COLOR ? '1 (Blue)' : '2 (Red)'}'s Turn`;
+            colourDominationStatus.textContent = statusText;
+            colourDominationStatus.style.color = cdCurrentPlayerColor;
+
+            colourChoiceButtonsDiv.innerHTML = '';
+            const availableColors = getAvailableColorsForPlayer(cdCurrentPlayerColor);
+
+            CD_NEUTRAL_COLORS_ARRAY.forEach(color => {
+                const button = document.createElement('button');
+                button.classList.add('color-button');
+                button.style.backgroundColor = color;
+                button.onclick = () => handleColourSelection(color);
+                if (!availableColors.includes(color) || color === cdOpponentColor(cdCurrentPlayerColor) || color === cdCurrentPlayerColor) {
+                    button.classList.add('disabled');
+                    button.disabled = true;
+                }
+                colourChoiceButtonsDiv.appendChild(button);
+            });
+        }
+
+        function checkGameEnd() {
+            const player1Score = countPlayerCells(CD_PLAYER1_COLOR);
+            const player2Score = countPlayerCells(CD_PLAYER2_COLOR);
+
+            const canPlayer1Move = getAvailableColorsForPlayer(CD_PLAYER1_COLOR).length > 0;
+            const canPlayer2Move = getAvailableColorsForPlayer(CD_PLAYER2_COLOR).length > 0;
+
+            if (!canPlayer1Move && !canPlayer2Move) {
+                cdGameActive = false;
+                let winnerMessage = '';
+                if (player1Score > player2Score) {
+                    winnerMessage = `Game Over! Player 1 (Blue) wins with ${player1Score} cells! Player 2 had ${player2Score} cells.`;
+                    colourDominationStatus.style.color = CD_PLAYER1_COLOR;
+                } else if (player2Score > player1Score) {
+                    winnerMessage = `Game Over! Player 2 (Red) wins with ${player2Score} cells! Player 1 had ${player1Score} cells.`;
+                    colourDominationStatus.style.color = CD_PLAYER2_COLOR;
+                } else {
+                    winnerMessage = `Game Over! It's a Tie! Both players have ${player1Score} cells.`;
+                    colourDominationStatus.style.color = '#cbd5e0';
+                }
+                colourDominationStatus.textContent = winnerMessage;
+                showMessageBox('Game Over!', winnerMessage);
+                
+                Array.from(colourChoiceButtonsDiv.children).forEach(button => {
+                    button.disabled = true;
+                    button.classList.add('disabled');
+                });
+            } else {
+                
+                if (getAvailableColorsForPlayer(cdCurrentPlayerColor).length === 0 && cdGameActive) {
+                   
+                    showMessageBox('No Valid Moves', `${cdCurrentPlayerColor === CD_PLAYER1_COLOR ? 'Player 1' : 'Player 2'} has no valid moves. Skipping turn.`);
+                    switchPlayerTurn();
+                    checkGameEnd(); 
+                }
+            }
+        }
+
+        function countPlayerCells(color) {
+            let count = 0;
+            for (let r = 0; r < CD_GRID_SIZE; r++) {
+                for (let c = 0; c < CD_GRID_SIZE; c++) {
+                    if (cdBoard[r][c] === color) {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
+        function resetColourDomination() {
+            initColourDominationBoard();
+        }
+
+        const chessCanvas = document.getElementById('chessCanvas');
+        const chessCtx = chessCanvas.getContext('2d');
+        const chessStatus = document.getElementById('chessStatus');
+
+        const CHESS_BOARD_SIZE = 8;
+        const CHESS_CELL_SIZE = chessCanvas.width / CHESS_BOARD_SIZE;
+
+        const CHESS_COLORS = {
+            WHITE: 'white',
+            BLACK: 'black'
+        };
+
+        const CHESS_PIECES = {
+            'K': { white: '♔', black: '♚' },
+            'Q': { white: '♕', black: '♛' },
+            'R': { white: '♖', black: '♜' },
+            'B': { white: '♗', black: '♝' },
+            'N': { white: '♘', black: '♞' },
+            'P': { white: '♙', black: '♟' }
+        };
+
+        let chessBoard = []; 
+        let chessCurrentTurn = CHESS_COLORS.WHITE;
+        let chessSelectedPiece = null; 
+        let chessGameActive = true;
+
+        function initChessBoard() {
+            chessBoard = [
+                [{ type: 'R', color: CHESS_COLORS.BLACK }, { type: 'N', color: CHESS_COLORS.BLACK }, { type: 'B', color: CHESS_COLORS.BLACK }, { type: 'Q', color: CHESS_COLORS.BLACK }, { type: 'K', color: CHESS_COLORS.BLACK }, { type: 'B', color: CHESS_COLORS.BLACK }, { type: 'N', color: CHESS_COLORS.BLACK }, { type: 'R', color: CHESS_COLORS.BLACK }],
+                [{ type: 'P', color: CHESS_COLORS.BLACK }, { type: 'P', color: CHESS_COLORS.BLACK }, { type: 'P', color: CHESS_COLORS.BLACK }, { type: 'P', color: CHESS_COLORS.BLACK }, { type: 'P', color: CHESS_COLORS.BLACK }, { type: 'P', color: CHESS_COLORS.BLACK }, { type: 'P', color: CHESS_COLORS.BLACK }, { type: 'P', color: CHESS_COLORS.BLACK }],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                [null, null, null, null, null, null, null, null],
+                [{ type: 'P', color: CHESS_COLORS.WHITE }, { type: 'P', color: CHESS_COLORS.WHITE }, { type: 'P', color: CHESS_COLORS.WHITE }, { type: 'P', color: CHESS_COLORS.WHITE }, { type: 'P', color: CHESS_COLORS.WHITE }, { type: 'P', color: CHESS_COLORS.WHITE }, { type: 'P', color: CHESS_COLORS.WHITE }, { type: 'P', color: CHESS_COLORS.WHITE }],
+                [{ type: 'R', color: CHESS_COLORS.WHITE }, { type: 'N', color: CHESS_COLORS.WHITE }, { type: 'B', color: CHESS_COLORS.WHITE }, { type: 'Q', color: CHESS_COLORS.WHITE }, { type: 'K', color: CHESS_COLORS.WHITE }, { type: 'B', color: CHESS_COLORS.WHITE }, { type: 'N', color: CHESS_COLORS.WHITE }, { type: 'R', color: CHESS_COLORS.WHITE }]
+            ];
+            chessCurrentTurn = CHESS_COLORS.WHITE;
+            chessSelectedPiece = null;
+            chessGameActive = true;
+            chessStatus.textContent = `White to Move`;
+            drawChessBoard();
+        }
+
+        function drawChessBoard() {
+            chessCtx.clearRect(0, 0, chessCanvas.width, chessCanvas.height);
+
+            for (let row = 0; row < CHESS_BOARD_SIZE; row++) {
+                for (let col = 0; col < CHESS_BOARD_SIZE; col++) {
+                    
+                    const color = (row + col) % 2 === 0 ? '#b0c4de' : '#4a5568'; 
+                    chessCtx.fillStyle = color;
+                    chessCtx.fillRect(col * CHESS_CELL_SIZE, row * CHESS_CELL_SIZE, CHESS_CELL_SIZE, CHESS_CELL_SIZE);
+
+                    
+                    if (chessSelectedPiece && chessSelectedPiece.row === row && chessSelectedPiece.col === col) {
+                        chessCtx.fillStyle = 'rgba(255, 255, 0, 0.5)'; 
+                        chessCtx.fillRect(col * CHESS_CELL_SIZE, row * CHESS_CELL_SIZE, CHESS_CELL_SIZE, CHESS_CELL_SIZE);
+                    }
+
+                    const piece = chessBoard[row][col];
+                    if (piece) {
+                        chessCtx.font = `${CHESS_CELL_SIZE * 0.7}px "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", Arial, sans-serif`;
+                        chessCtx.textAlign = 'center';
+                        chessCtx.textBaseline = 'middle';
+                        chessCtx.fillStyle = piece.color; 
+                        chessCtx.fillText(CHESS_PIECES[piece.type][piece.color], col * CHESS_CELL_SIZE + CHESS_CELL_SIZE / 2, row * CHESS_CELL_SIZE + CHESS_CELL_SIZE / 2);
+                    }
+                }
+            }
+        }
+
+        function handleChessClick(event) {
+            if (!chessGameActive) return;
+
+            const rect = chessCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const col = Math.floor(x / CHESS_CELL_SIZE);
+            const row = Math.floor(y / CHESS_CELL_SIZE);
+
+            if (chessSelectedPiece) {
+                tryMovePiece(chessSelectedPiece.row, chessSelectedPiece.col, row, col);
+            } else {
+                selectPiece(row, col);
+            }
+        }
+
+        function selectPiece(row, col) {
+            const piece = chessBoard[row][col];
+            if (piece && piece.color === chessCurrentTurn) {
+                chessSelectedPiece = { row, col, piece };
+                drawChessBoard(); 
+            } else {
+                chessSelectedPiece = null; 
+                drawChessBoard(); 
+            }
+        }
+
+        function tryMovePiece(fromRow, fromCol, toRow, toCol) {
+            const pieceToMove = chessBoard[fromRow][fromCol];
+            if (!pieceToMove) { 
+                chessSelectedPiece = null;
+                drawChessBoard();
+                return;
+            }
+
+            if (isValidChessMove(fromRow, fromCol, toRow, toCol)) {
+                
+                const fromR = fromRow, fromC = fromCol;
+                const toR = toRow, toC = toCol;
+
+                const originalPiece = chessBoard[fromR][fromC];
+                const capturedPiece = chessBoard[toR][toC];
+                chessBoard[toR][toC] = originalPiece;
+                chessBoard[fromR][fromC] = null;
+
+                if (isKingInCheck(chessCurrentTurn)) {
+                   
+                    chessBoard[fromR][fromC] = originalPiece; 
+                    chessBoard[toR][toC] = capturedPiece; 
+                    showMessageBox('Invalid Move', 'Your king would be in check!');
+                    chessSelectedPiece = null;
+                    drawChessBoard();
+                    return;
+                }
+
+                const opponentColor = chessCurrentTurn === CHESS_COLORS.WHITE ? CHESS_COLORS.BLACK : CHESS_COLORS.WHITE;
+                if (isKingInCheck(opponentColor)) {
+                    if (isCheckmate(opponentColor)) {
+                        chessStatus.textContent = `${chessCurrentTurn} Wins by Checkmate!`;
+                        showMessageBox('Checkmate!', `${chessCurrentTurn} Wins!`);
+                        chessGameActive = false;
+                    } else {
+                        chessStatus.textContent = `${opponentColor} is in Check!`;
+                    }
+                } else if (isStalemate(opponentColor)) {
+                     chessStatus.textContent = 'Stalemate!';
+                     showMessageBox('Stalemate!', 'The game is a draw by stalemate!');
+                     chessGameActive = false;
+                }
+
+                chessCurrentTurn = opponentColor;
+                chessStatus.textContent = `${chessCurrentTurn} to Move`;
+            } else {
+                showMessageBox('Invalid Move', 'That piece cannot move there.');
+            }
+
+            chessSelectedPiece = null; 
+            drawChessBoard(); 
+        }
+
+        function isValidChessMove(fromR, fromC, toR, toC) {
+            const piece = chessBoard[fromR][fromC];
+            const targetPiece = chessBoard[toR][toC];
+
+            if (!piece) return false; 
+            if (fromR === toR && fromC === toC) return false; 
+            if (targetPiece && targetPiece.color === piece.color) return false; 
+
+            const dRow = Math.abs(toR - fromR);
+            const dCol = Math.abs(toC - fromC);
+            const rowDir = Math.sign(toR - fromR);
+            const colDir = Math.sign(toC - fromC);
+
+            switch (piece.type) {
+                case 'P': 
+                    if (piece.color === CHESS_COLORS.WHITE) {
+                       
+                        if (fromC === toC && !targetPiece) {
+                            if (toR === fromR - 1) return true; 
+                            if (fromR === 6 && toR === fromR - 2 && !chessBoard[fromR - 1][fromC]) return true; 
+                        }
+                        if (dCol === 1 && toR === fromR - 1 && targetPiece && targetPiece.color === CHESS_COLORS.BLACK) return true;
+                    } else { 
+                        if (fromC === toC && !targetPiece) {
+                            if (toR === fromR + 1) return true; 
+                            if (fromR === 1 && toR === fromR + 2 && !chessBoard[fromR + 1][fromC]) return true; 
+                        }
+                        if (dCol === 1 && toR === fromR + 1 && targetPiece && targetPiece.color === CHESS_COLORS.WHITE) return true;
+                    }
+                    return false;
+                case 'R': 
+                    if (fromR === toR || fromC === toC) { 
+                        if (fromR === toR) { 
+                            for (let c = fromC + colDir; c !== toC; c += colDir) {
+                                if (chessBoard[fromR][c]) return false;
+                            }
+                        } else { 
+                            for (let r = fromR + rowDir; r !== toR; r += rowDir) {
+                                if (chessBoard[r][fromC]) return false;
+                            }
+                        }
+                        return true;
+                    }
+                    return false;
+                case 'N': 
+                    return (dRow === 2 && dCol === 1) || (dRow === 1 && dCol === 2);
+                case 'B': 
+                    if (dRow === dCol) { 
+                       
+                        for (let i = 1; i < dRow; i++) {
+                            if (chessBoard[fromR + i * rowDir][fromC + i * colDir]) return false;
+                        }
+                        return true;
+                    }
+                    return false;
+                case 'Q': 
+                    if (fromR === toR || fromC === toC || dRow === dCol) { 
+                       
+                        if (fromR === toR) {
+                            for (let c = fromC + colDir; c !== toC; c += colDir) {
+                                if (chessBoard[fromR][c]) return false;
+                            }
+                        } else if (fromC === toC) { 
+                            for (let r = fromR + rowDir; r !== toR; r += rowDir) {
+                                if (chessBoard[r][fromC]) return false;
+                            }
+                        } else { 
+                            for (let i = 1; i < dRow; i++) {
+                                if (chessBoard[fromR + i * rowDir][fromC + i * colDir]) return false;
+                            }
+                        }
+                        return true;
+                    }
+                    return false;
+                case 'K': 
+                    return dRow <= 1 && dCol <= 1; 
+                default:
+                    return false;
+            }
+        }
+
+        
+        function findKing(color) {
+            for (let r = 0; r < CHESS_BOARD_SIZE; r++) {
+                for (let c = 0; c < CHESS_BOARD_SIZE; c++) {
+                    const piece = chessBoard[r][c];
+                    if (piece && piece.type === 'K' && piece.color === color) {
+                        return { row: r, col: c };
+                    }
+                }
+            }
+            return null; 
+        }
+
+        function isSquareAttacked(targetRow, targetCol, attackingColor) {
+            const opponentColor = attackingColor === CHESS_COLORS.WHITE ? CHESS_COLORS.BLACK : CHESS_COLORS.WHITE;
+
+            for (let r = 0; r < CHESS_BOARD_SIZE; r++) {
+                for (let c = 0; c < CHESS_BOARD_SIZE; c++) {
+                    const piece = chessBoard[r][c];
+                    if (piece && piece.color === attackingColor) {
+                        const originalTurn = chessCurrentTurn;
+                        chessCurrentTurn = attackingColor;
+                        const canAttack = isValidChessMove(r, c, targetRow, targetCol);
+                        chessCurrentTurn = originalTurn; 
+                        if (canAttack) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+
+        function isKingInCheck(kingColor) {
+            const kingPos = findKing(kingColor);
+            if (!kingPos) return false;
+
+            const attackingColor = kingColor === CHESS_COLORS.WHITE ? CHESS_COLORS.BLACK : CHESS_COLORS.WHITE;
+            return isSquareAttacked(kingPos.row, kingPos.col, attackingColor);
+        }
+
+        function isCheckmate(kingColor) {
+            if (!isKingInCheck(kingColor)) return false;
+
+            for (let r = 0; r < CHESS_BOARD_SIZE; r++) {
+                for (let c = 0; c < CHESS_BOARD_SIZE; c++) {
+                    const piece = chessBoard[r][c];
+                    if (piece && piece.color === kingColor) {
+                        for (let toR = 0; toR < CHESS_BOARD_SIZE; toR++) {
+                            for (let toC = 0; toC < CHESS_BOARD_SIZE; toC++) {
+                                if (isValidChessMove(r, c, toR, toC)) {
+                                    const originalPiece = chessBoard[r][c];
+                                    const capturedPiece = chessBoard[toR][toC];
+                                    chessBoard[toR][toC] = originalPiece;
+                                    chessBoard[r][c] = null;
+
+                                    if (!isKingInCheck(kingColor)) {
+                                        chessBoard[r][c] = originalPiece;
+                                        chessBoard[toR][toC] = capturedPiece;
+                                        return false; 
+                                    }
+
+                                    chessBoard[r][c] = originalPiece;
+                                    chessBoard[toR][toC] = capturedPiece;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return true; 
+        }
+
+        function isStalemate(kingColor) {
+            if (isKingInCheck(kingColor)) return false; 
+
+            for (let r = 0; r < CHESS_BOARD_SIZE; r++) {
+                for (let c = 0; c < CHESS_BOARD_SIZE; c++) {
+                    const piece = chessBoard[r][c];
+                    if (piece && piece.color === kingColor) {
+                       
+                        for (let toR = 0; toR < CHESS_BOARD_SIZE; toR++) {
+                            for (let toC = 0; toC < CHESS_BOARD_SIZE; toC++) {
+                                if (isValidChessMove(r, c, toR, toC)) {
+                                    
+                                    const originalPiece = chessBoard[r][c];
+                                    const capturedPiece = chessBoard[toR][toC];
+                                    chessBoard[toR][toC] = originalPiece;
+                                    chessBoard[r][c] = null;
+
+                                    if (!isKingInCheck(kingColor)) {
+                                        chessBoard[r][c] = originalPiece;
+                                        chessBoard[toR][toC] = capturedPiece;
+                                        return false; 
+                                    }
+
+                                    chessBoard[r][c] = originalPiece;
+                                    chessBoard[toR][toC] = capturedPiece;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return true; 
+        }
+
+
+        function resetChessGame() {
+            initChessBoard();
+        }
+
+        chessCanvas.addEventListener('click', handleChessClick);
+
+        const fishingFrenzyCanvas = document.getElementById('fishingFrenzyCanvas');
+        const fishingFrenzyCtx = fishingFrenzyCanvas.getContext('2d');
+        const fishingFrenzyStatus = document.getElementById('fishingFrenzyStatus');
+        const fishingFrenzyScoreDisplay = document.getElementById('fishingFrenzyScore');
+
+        const FF_CANVAS_WIDTH = 600;
+        const FF_CANVAS_HEIGHT = 400;
+
+        const FF_HOOK_START_Y = 20; 
+        const FF_WATER_LEVEL = FF_CANVAS_HEIGHT * 0.3; 
+        const FF_GROUND_LEVEL = FF_CANVAS_HEIGHT * 0.95; 
+
+        let ffHookX = FF_CANVAS_WIDTH / 2;
+        let ffHookSpeed = 3; 
+        let ffHookDirection = 1; 
+        let ffIsLineCast = false;
+        let ffLineY = FF_HOOK_START_Y; 
+        let ffLineDropSpeed = 5;
+        let ffIsReeling = false;
+
+        let ffScore = 0;
+        let ffFishes = []; 
+        const FF_FISH_COUNT = 8;
+        const FF_FISH_SIZE = 30; 
+
+        let ffAnimationFrameId; 
+        let ffGameActive = false;
+
+        const FF_FISH_TYPES = [
+            { emoji: '🐠', value: 10 },
+            { emoji: '🐟', value: 20 },
+            { emoji: '🐡', value: 30 },
+            { emoji: '🦈', value: 50 } 
+        ];
+
+        function generateFishes() {
+            ffFishes = [];
+            for (let i = 0; i < FF_FISH_COUNT; i++) {
+                const type = FF_FISH_TYPES[Math.floor(Math.random() * FF_FISH_TYPES.length)];
+                const fishX = Math.random() * (FF_CANVAS_WIDTH - FF_FISH_SIZE * 2) + FF_FISH_SIZE; 
+                const fishY = Math.random() * (FF_GROUND_LEVEL - FF_WATER_LEVEL - FF_FISH_SIZE) + FF_WATER_LEVEL; 
+                ffFishes.push({ x: fishX, y: fishY, type: type, caught: false });
+            }
+        }
+
+        function drawFishingFrenzyGame() {
+            fishingFrenzyCtx.clearRect(0, 0, FF_CANVAS_WIDTH, FF_CANVAS_HEIGHT);
+
+            fishingFrenzyCtx.fillStyle = '#87CEEB'; 
+            fishingFrenzyCtx.fillRect(0, 0, FF_CANVAS_WIDTH, FF_WATER_LEVEL);
+
+            
+            fishingFrenzyCtx.fillStyle = '#4682B4'; 
+            fishingFrenzyCtx.fillRect(0, FF_WATER_LEVEL, FF_CANVAS_WIDTH, FF_CANVAS_HEIGHT - FF_WATER_LEVEL);
+
+           
+            fishingFrenzyCtx.strokeStyle = '#e2e8f0'; 
+            fishingFrenzyCtx.lineWidth = 2;
+            fishingFrenzyCtx.beginPath();
+            fishingFrenzyCtx.moveTo(ffHookX, 0); 
+            fishingFrenzyCtx.lineTo(ffHookX, ffIsLineCast ? ffLineY : FF_HOOK_START_Y); 
+            fishingFrenzyCtx.stroke();
+
+            fishingFrenzyCtx.fillStyle = '#cbd5e0';
+            fishingFrenzyCtx.beginPath();
+            fishingFrenzyCtx.arc(ffHookX, ffIsLineCast ? ffLineY : FF_HOOK_START_Y, 5, 0, Math.PI * 2);
+            fishingFrenzyCtx.fill();
+
+            fishingFrenzyCtx.font = `${FF_FISH_SIZE}px "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", Arial, sans-serif`;
+            fishingFrenzyCtx.textAlign = 'center';
+            fishingFrenzyCtx.textBaseline = 'middle';
+            ffFishes.forEach(fish => {
+                if (!fish.caught) {
+                    fishingFrenzyCtx.fillText(fish.type.emoji, fish.x, fish.y);
+                }
+            });
+
+            fishingFrenzyCtx.fillStyle = '#e2e8f0';
+            fishingFrenzyCtx.font = '20px Inter';
+            fishingFrenzyCtx.textAlign = 'left';
+            fishingFrenzyCtx.fillText(`Score: ${ffScore}`, 10, 20);
+        }
+
+        function updateFishingFrenzyGame() {
+            if (!ffGameActive) return;
+
+            if (!ffIsLineCast && !ffIsReeling) {
+                ffHookX += ffHookSpeed * ffHookDirection;
+                if (ffHookX > FF_CANVAS_WIDTH - 20 || ffHookX < 20) {
+                    ffHookDirection *= -1; 
+                }
+            }
+
+            if (ffIsLineCast) {
+                ffLineY += ffLineDropSpeed;
+
+                if (!ffIsReeling) {
+                    for (let i = 0; i < ffFishes.length; i++) {
+                        const fish = ffFishes[i];
+                        if (!fish.caught &&
+                            ffLineY >= fish.y - FF_FISH_SIZE / 2 && ffLineY <= fish.y + FF_FISH_SIZE / 2 &&
+                            ffHookX >= fish.x - FF_FISH_SIZE / 2 && ffHookX <= fish.x + FF_FISH_SIZE / 2) {
+                          
+                            fish.caught = true; 
+                            ffScore += fish.type.value;
+                            ffIsReeling = true; 
+                            ffLineDropSpeed = -Math.abs(ffLineDropSpeed); 
+                            fishingFrenzyStatus.textContent = `Caught a ${fish.type.emoji}! +${fish.type.value} points!`;
+                            ffFishes = ffFishes.filter(f => f !== fish); 
+                            break; 
+                        }
+                    }
+                }
+
+
+                if (ffLineY >= FF_CANVAS_HEIGHT || (ffIsReeling && ffLineY <= FF_HOOK_START_Y)) {
+                    ffIsLineCast = false;
+                    ffIsReeling = false;
+                    ffLineY = FF_HOOK_START_Y; 
+                    ffLineDropSpeed = Math.abs(ffLineDropSpeed); 
+                    fishingFrenzyStatus.textContent = "Ready to cast!";
+                    if (ffFishes.length === 0) {
+                        showMessageBox('All Fish Caught!', `You caught all the fish! Your final score: ${ffScore}.`);
+                        stopFishingFrenzyGame();
+                    } else if (ffIsReeling && ffLineY <= FF_HOOK_START_Y) {
+                    } else if (!ffIsReeling && ffLineY >= FF_CANVAS_HEIGHT) {
+                        
+                        fishingFrenzyStatus.textContent = "Missed! Ready to cast again.";
+                    }
+
+                }
+            }
+
+            fishingFrenzyScoreDisplay.textContent = ffScore;
+            drawFishingFrenzyGame();
+            ffAnimationFrameId = requestAnimationFrame(updateFishingFrenzyGame);
+        }
+
+        function castLine() {
+            if (!ffGameActive || ffIsLineCast) return; 
+            ffIsLineCast = true;
+            ffIsReeling = false;
+            ffLineY = FF_HOOK_START_Y; 
+            fishingFrenzyStatus.textContent = "Fishing...";
+        }
+
+        function startFishingFrenzyGame() {
+            if (ffGameActive) return; 
+            ffScore = 0;
+            ffHookX = FF_CANVAS_WIDTH / 2;
+            ffHookDirection = 1;
+            ffIsLineCast = false;
+            ffIsReeling = false;
+            ffLineY = FF_HOOK_START_Y;
+            ffGameActive = true;
+            generateFishes();
+            drawFishingFrenzyGame(); 
+            fishingFrenzyStatus.textContent = "Ready to cast!";
+            ffAnimationFrameId = requestAnimationFrame(updateFishingFrenzyGame);
+        }
+
+        function stopFishingFrenzyGame() {
+            cancelAnimationFrame(ffAnimationFrameId);
+            ffGameActive = false;
+            fishingFrenzyStatus.textContent = "Game Stopped. Final Score: " + ffScore;
+        }
+
+        function resetFishingFrenzyGame() {
+            stopFishingFrenzyGame();
+            startFishingFrenzyGame();
+        }
+
+        const oceanOdysseyCanvas = document.getElementById('oceanOdysseyCanvas');
+        const oceanOdysseyCtx = oceanOdysseyCanvas.getContext('2d');
+        const oceanOdysseyStatus = document.getElementById('oceanOdysseyStatus');
+        const oceanOdysseyScoreDisplay = document.getElementById('oceanOdysseyScore');
+
+        const OO_CANVAS_WIDTH = 600;
+        const OO_CANVAS_HEIGHT = 400;
+
+        let ooPlayer = {
+            x: OO_CANVAS_WIDTH / 2,
+            y: OO_CANVAS_HEIGHT / 2,
+            radius: 10,
+            emoji: '🐠' 
+        };
+
+        let ooNPCFishes = [];
+        const OO_MAX_NPC_FISHES = 20;
+        let ooScore = 0;
+        let ooGameActive = false;
+        let ooAnimationFrameId;
+
+        const OO_FISH_TYPES = [
+            { minRadius: 5, maxRadius: 9, minSpeed: 1, maxSpeed: 3, emojis: ['🐟', '🐡', '🦐'] },
+            
+            { minRadius: 10, maxRadius: 14, minSpeed: 0.8, maxSpeed: 2.5, emojis: ['🐠', '🦑', '🦀'] },
+           
+            { minRadius: 15, maxRadius: 30, minSpeed: 0.5, maxSpeed: 2, emojis: ['🦈', '🐋', '🐙'] }
+        ];
+
+        function getRandomFishType() {
+            const randomIndex = Math.floor(Math.random() * OO_FISH_TYPES.length);
+            return OO_FISH_TYPES[randomIndex];
+        }
+
+        function generateNPCFish() {
+            if (ooNPCFishes.length >= OO_MAX_NPC_FISHES) return;
+
+            const typeConfig = getRandomFishType(); 
+            const radius = Math.random() * (typeConfig.maxRadius - typeConfig.minRadius) + typeConfig.minRadius;
+            const speed = Math.random() * (typeConfig.maxSpeed - typeConfig.minSpeed) + typeConfig.minSpeed;
+            const direction = Math.random() < 0.5 ? 1 : -1; 
+
+            const x = direction === 1 ? -radius : OO_CANVAS_WIDTH + radius; 
+            const y = Math.random() * (OO_CANVAS_HEIGHT - radius * 2) + radius; 
+
+            const emoji = typeConfig.emojis[Math.floor(Math.random() * typeConfig.emojis.length)];
+
+            ooNPCFishes.push({ x, y, radius, speed, direction, emoji });
+        }
+
+        function drawOceanOdysseyGame() {
+            oceanOdysseyCtx.clearRect(0, 0, OO_CANVAS_WIDTH, OO_CANVAS_HEIGHT);
+
+            oceanOdysseyCtx.fillStyle = '#1e3a8a'; 
+            oceanOdysseyCtx.fillRect(0, 0, OO_CANVAS_WIDTH, OO_CANVAS_HEIGHT);
+
+            oceanOdysseyCtx.font = `${ooPlayer.radius * 2}px "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", Arial, sans-serif`;
+            oceanOdysseyCtx.textAlign = 'center';
+            oceanOdysseyCtx.textBaseline = 'middle';
+            oceanOdysseyCtx.fillText(ooPlayer.emoji, ooPlayer.x, ooPlayer.y);
+
+
+            ooNPCFishes.forEach(fish => {
+                oceanOdysseyCtx.font = `${fish.radius * 2}px "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", Arial, sans-serif`;
+                oceanOdysseyCtx.textAlign = 'center';
+                oceanOdysseyCtx.textBaseline = 'middle';
+                oceanOdysseyCtx.fillText(fish.emoji, fish.x, fish.y);
+            });
+
+            oceanOdysseyCtx.fillStyle = '#e2e8f0';
+            oceanOdysseyCtx.font = '20px Inter';
+            oceanOdysseyCtx.textAlign = 'left';
+            oceanOdysseyCtx.fillText(`Score: ${ooScore}`, 10, 30);
+        }
+
+        function distance(x1, y1, x2, y2) {
+            const dx = x1 - x2;
+            const dy = y1 - y2;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function updateOceanOdysseyGame() {
+            if (!ooGameActive) return;
+
+            for (let i = 0; i < ooNPCFishes.length; i++) {
+                const fish = ooNPCFishes[i];
+                fish.x += fish.speed * fish.direction;
+
+                if ((fish.direction === 1 && fish.x > OO_CANVAS_WIDTH + fish.radius * 2) || 
+                    (fish.direction === -1 && fish.x < -fish.radius * 2)) {
+                    ooNPCFishes.splice(i, 1);
+                    i--; 
+                    generateNPCFish(); 
+                }
+
+                if (distance(ooPlayer.x, ooPlayer.y, fish.x, fish.y) < ooPlayer.radius + fish.radius) {
+                    if (ooPlayer.radius > fish.radius) {
+                        
+                        ooScore += Math.floor(fish.radius); 
+                        ooPlayer.radius += 0.5; 
+                        ooNPCFishes.splice(i, 1); 
+                        i--; 
+                        generateNPCFish(); 
+                        oceanOdysseyStatus.textContent = `Ate a fish! Score: ${ooScore}`;
+                        if (ooScore >= 10) unlockAchievement('oceanExplorer'); 
+                    } else {
+                        stopOceanOdysseyGame();
+                        showMessageBox('Game Over!', `You were eaten by a bigger fish! Final Score: ${ooScore}.`, resetOceanOdysseyGame); 
+                        return;
+                    }
+                }
+            }
+
+            while (ooNPCFishes.length < OO_MAX_NPC_FISHES) {
+                generateNPCFish();
+            }
+
+            drawOceanOdysseyGame();
+            ooAnimationFrameId = requestAnimationFrame(updateOceanOdysseyGame);
+        }
+
+        function handleOceanOdysseyMouseMove(event) {
+            const rect = oceanOdysseyCanvas.getBoundingClientRect();
+            ooPlayer.x = event.clientX - rect.left;
+            ooPlayer.y = event.clientY - rect.top;
+
+            ooPlayer.x = Math.max(ooPlayer.radius, Math.min(ooPlayer.x, OO_CANVAS_WIDTH - ooPlayer.radius));
+            ooPlayer.y = Math.max(ooPlayer.radius, Math.min(ooPlayer.y, OO_CANVAS_HEIGHT - ooPlayer.radius));
+        }
+
+        oceanOdysseyCanvas.addEventListener('touchmove', function(event) {
+            event.preventDefault(); 
+            if (event.touches.length > 0) {
+                const touch = event.touches[0];
+                const rect = oceanOdysseyCanvas.getBoundingClientRect();
+                ooPlayer.x = touch.clientX - rect.left;
+                ooPlayer.y = touch.clientY - touch.radius;
+
+                ooPlayer.x = Math.max(ooPlayer.radius, Math.min(ooPlayer.x, OO_CANVAS_WIDTH - ooPlayer.radius));
+                ooPlayer.y = Math.max(ooPlayer.radius, Math.min(ooPlayer.y, OO_CANVAS_HEIGHT - ooPlayer.radius));
+            }
+        }, { passive: false });
+
+        function startOceanOdysseyGame() {
+            if (ooGameActive) return; 
+
+            ooPlayer = {
+                x: OO_CANVAS_WIDTH / 2,
+                y: OO_CANVAS_HEIGHT / 2,
+                radius: 10,
+                emoji: '🐠'
+            };
+            ooNPCFishes = [];
+            ooScore = 0;
+            ooGameActive = true;
+            oceanOdysseyScoreDisplay.textContent = '0';
+            oceanOdysseyStatus.textContent = "Move your fish to eat smaller ones!";
+
+            for (let i = 0; i < OO_MAX_NPC_FISHES; i++) {
+                generateNPCFish();
+            }
+
+            oceanOdysseyCanvas.addEventListener('mousemove', handleOceanOdysseyMouseMove);
+            ooAnimationFrameId = requestAnimationFrame(updateOceanOdysseyGame);
+        }
+
+        function stopOceanOdysseyGame() {
+            if (ooAnimationFrameId) {
+                cancelAnimationFrame(ooAnimationFrameId);
+            }
+            ooGameActive = false;
+            oceanOdysseyCanvas.removeEventListener('mousemove', handleOceanOdysseyMouseMove);
+            oceanOdysseyStatus.textContent = "Game Stopped. Final Score: " + ooScore;
+        }
+
+        function resetOceanOdysseyGame() {
+            stopOceanOdysseyGame();
+            startOceanOdysseyGame();
+        }
+
+        const mazeCanvas = document.getElementById('mazeCanvas');
+        const mazeCtx = mazeCanvas.getContext('2d');
+        const mazeStatus = document.getElementById('mazeStatus');
+
+        const MAZE_PATH = 0; 
+        const MAZE_WALL = 1; 
+        const MAZE_START = 2; 
+        const MAZE_END = 3;   
+
+        const mazeLevels = [
+            { 
+                grid: [
+                    [1, 1, 1, 1, 1, 1, 1],
+                    [2, 0, 0, 0, 0, 0, 1],
+                    [1, 1, 1, 0, 1, 0, 1],
+                    [1, 0, 0, 0, 1, 0, 1],
+                    [1, 0, 1, 1, 1, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 3],
+                    [1, 1, 1, 1, 1, 1, 1]
+                ],
+                start: { row: 1, col: 0 },
+                end: { row: 5, col: 6 }
+            },
+            { 
+                grid: [
+                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    [1, 2, 0, 1, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 1, 0, 1, 1, 1, 0, 1],
+                    [1, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+                    [1, 0, 0, 1, 1, 1, 0, 1, 0, 1],
+                    [1, 0, 1, 1, 0, 0, 0, 1, 0, 1],
+                    [1, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+                    [1, 1, 1, 1, 0, 1, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 0, 1, 3, 1],
+                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+                ],
+                start: { row: 1, col: 1 },
+                end: { row: 8, col: 8 }
+            },
+            { 
+                grid: [
+                    [1,1,1,1,1,1,1,1,1,1,1,1],
+                    [2,0,0,0,1,0,0,0,0,0,0,1],
+                    [1,0,1,0,1,0,1,1,1,1,0,1],
+                    [1,0,1,0,0,0,1,0,0,0,0,1],
+                    [1,0,1,1,1,1,1,0,1,1,0,1],
+                    [1,0,0,0,0,0,0,0,1,0,0,1],
+                    [1,1,1,1,1,1,0,1,1,0,1,1],
+                    [1,0,0,0,0,0,0,0,1,0,0,1],
+                    [1,0,1,1,1,1,1,1,1,1,0,1],
+                    [1,0,0,0,0,0,0,0,0,0,0,1],
+                    [1,1,1,1,1,1,1,1,1,1,3,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { row: 1, col: 0 },
+                end: { row: 10, col: 10 }
+            },
+            { 
+                grid: [
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [2,0,0,0,1,0,0,0,1,0,0,0,0,0,1],
+                    [1,1,0,1,1,0,1,0,1,0,1,1,1,0,1],
+                    [1,0,0,0,0,0,1,0,1,0,0,0,1,0,1],
+                    [1,0,1,1,1,1,1,0,1,1,1,0,1,0,1],
+                    [1,0,0,0,0,0,0,0,0,0,1,0,1,0,1],
+                    [1,1,1,0,1,1,1,1,1,0,1,0,1,0,1],
+                    [1,0,0,0,1,0,0,0,1,0,1,0,1,0,1],
+                    [1,0,1,1,1,0,1,0,1,0,1,0,1,0,1],
+                    [1,0,0,0,0,0,1,0,1,0,1,0,1,0,1],
+                    [1,1,0,1,1,1,1,0,1,0,1,0,1,0,1],
+                    [1,0,0,0,0,0,0,0,1,0,0,0,1,0,1],
+                    [1,0,1,1,1,1,1,1,1,1,1,0,1,0,1],
+                    [1,0,0,0,0,0,0,0,0,0,0,0,0,3,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { row: 1, col: 0 },
+                end: { row: 13, col: 13 }
+            }
+        ];
+
+        let currentLevelIndex = 0;
+        let currentMaze = mazeLevels[currentLevelIndex];
+        let mazeCellSize = mazeCanvas.width / currentMaze.grid[0].length; 
+        let playerPos = { ...currentMaze.start }; 
+        let lionPos = {}; 
+        let isMazeGameActive = false;
+
+        function findSafeLionSpawn() {
+            let attempts = 0;
+            const minDistanceFromPlayer = Math.floor(currentMaze.grid.length / 2) + 2;
+
+            while (attempts < 200) { 
+                const r = Math.floor(Math.random() * currentMaze.grid.length);
+                const c = Math.floor(Math.random() * currentMaze.grid[0].length);
+
+                const isStartOrEnd = (r === currentMaze.start.row && c === currentMaze.start.col) ||
+                                     (r === currentMaze.end.row && c === currentMaze.end.col);
+
+                const distToPlayerStart = Math.abs(r - currentMaze.start.row) + Math.abs(c - currentMaze.start.col);
+
+                if (currentMaze.grid[r][c] === MAZE_PATH && !isStartOrEnd && distToPlayerStart >= minDistanceFromPlayer) {
+                    return { row: r, col: c };
+                }
+                attempts++;
+            }
+            for (let r = 0; r < currentMaze.grid.length; r++) {
+                for (let c = 0; c < currentMaze.grid[0].length; c++) {
+                    const isStartOrEnd = (r === currentMaze.start.row && c === currentMaze.start.col) ||
+                                         (r === currentMaze.end.row && c === currentMaze.end.col);
+                    if (currentMaze.grid[r][c] === MAZE_PATH && !isStartOrEnd) {
+                           return { row: r, col: c };
+                    }
+                }
+            }
+            return { row: currentMaze.start.row, col: currentMaze.start.col };
+        }
+
+
+        function loadMazeLevel(levelIndex) {
+            if (levelIndex < 0 || levelIndex >= mazeLevels.length) {
+                showMessageBox('Congratulations!', 'You have guided the gorilla through all the mazes! You are a Maze Grandmaster!');
+                unlockAchievement('mazeMaster');
+                currentLevelIndex = 0;
+                return;
+            }
+
+            currentLevelIndex = levelIndex;
+            currentMaze = mazeLevels[currentLevelIndex];
+            playerPos = { ...currentMaze.start }; 
+            lionPos = findSafeLionSpawn(); 
+            mazeCellSize = mazeCanvas.width / currentMaze.grid[0].length; 
+            mazeStatus.textContent = `Level ${currentLevelIndex + 1}`;
+            drawMaze();
+        }
+
+        function drawMaze() {
+            mazeCtx.clearRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+
+            for (let row = 0; row < currentMaze.grid.length; row++) {
+                for (let col = 0; col < currentMaze.grid[row].length; col++) {
+                    const cellType = currentMaze.grid[row][col];
+                    let color = '';
+                    let emoji = ''; e
+
+                    switch (cellType) {
+                        case MAZE_WALL:
+                            color = '#4a5568'; 
+                            break;
+                        case MAZE_PATH:
+                            color = '#a0aec0'; 
+                            break;
+                        case MAZE_START:
+                            color = '#38a169';
+                            emoji = ''; 
+                            break;
+                        case MAZE_END:
+                            color = '#e53e3e';
+                            emoji = '🍌'; 
+                            break;
+                    }
+                    mazeCtx.fillStyle = color;
+                    mazeCtx.fillRect(col * mazeCellSize, row * mazeCellSize, mazeCellSize, mazeCellSize);
+                    mazeCtx.strokeStyle = '#1a202c'; 
+                    mazeCtx.strokeRect(col * mazeCellSize, row * mazeCellSize, mazeCellSize, mazeCellSize);
+
+                    if (emoji) {
+                        mazeCtx.font = `${mazeCellSize * 0.7}px "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", Arial, sans-serif`;
+                        mazeCtx.textAlign = 'center';
+                        mazeCtx.textBaseline = 'middle';
+                        mazeCtx.fillText(emoji, col * mazeCellSize + mazeCellSize / 2, row * mazeCellSize + mazeCellSize / 2);
+                    }
+                }
+            }
+
+            mazeCtx.font = `${mazeCellSize * 0.7}px "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", Arial, sans-serif`;
+            mazeCtx.textAlign = 'center';
+            mazeCtx.textBaseline = 'middle';
+            mazeCtx.fillText('🦍', playerPos.col * mazeCellSize + mazeCellSize / 2, playerPos.row * mazeCellSize + mazeCellSize / 2);
+
+            mazeCtx.font = `${mazeCellSize * 0.7}px "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", Arial, sans-serif`;
+            mazeCtx.textAlign = 'center';
+            mazeCtx.textBaseline = 'middle';
+            mazeCtx.fillText('🦁', lionPos.col * mazeCellSize + mazeCellSize / 2, lionPos.row * mazeCellSize + mazeCellSize / 2);
+        }
+
+        function moveLion() {
+            
+            const manhattanDistance = (r1, c1, r2, c2) => Math.abs(r1 - r2) + Math.abs(c1 - c2);
+
+            let bestMove = { r: lionPos.row, c: lionPos.col };
+            let minDistance = manhattanDistance(lionPos.row, lionPos.col, playerPos.row, playerPos.col);
+
+            const possibleMoves = [
+                { dr: -1, dc: 0 }, 
+                { dr: 1, dc: 0 },  
+                { dr: 0, dc: -1 }, 
+                { dr: 0, dc: 1 }   
+            ];
+
+            let potentialMoves = [];
+
+            for (const move of possibleMoves) {
+                const newR = lionPos.row + move.dr;
+                const newC = lionPos.col + move.dc;
+
+                if (newR >= 0 && newR < currentMaze.grid.length &&
+                    newC >= 0 && newC < currentMaze.grid[0].length &&
+                    currentMaze.grid[newR][newC] !== MAZE_WALL) {
+
+                    const dist = manhattanDistance(newR, newC, playerPos.row, playerPos.col);
+                    potentialMoves.push({ newR, newC, dist, move });
+                }
+            }
+
+            const validMoves = potentialMoves.filter(m => m.dist <= minDistance);
+
+            if (validMoves.length > 0) {
+                validMoves.sort((a, b) => {
+                    if (a.dist !== b.dist) return a.dist - b.dist; 
+                    if (Math.abs(playerPos.col - (lionPos.col + a.move.dc)) !== Math.abs(playerPos.col - (lionPos.col + b.move.dc))) {
+                       
+                        return Math.abs(playerPos.col - (lionPos.col + a.move.dc)) - Math.abs(playerPos.col - (lionPos.col + b.move.dc));
+                    }
+                    if (Math.abs(playerPos.row - (lionPos.row + a.move.dr)) !== Math.abs(playerPos.row - (lionPos.row + b.move.dr))) {
+                       
+                        return Math.abs(playerPos.row - (lionPos.row + a.move.dr)) - Math.abs(playerPos.row - (lionPos.row + b.move.dr));
+                    }
+                    return 0; 
+                });
+
+                const chosenMove = validMoves[0];
+                lionPos.row = chosenMove.newR;
+                lionPos.col = chosenMove.newC;
+            }
+            drawMaze(); 
+        }
+
+        function gameOverMaze() {
+            isMazeGameActive = false;
+            showMessageBox('Game Over!', 'A fierce lion caught the gorilla! Try again!', resetMazeGame); 
+            document.removeEventListener('keydown', handleMazeKeyDown);
+        }
+
+        function movePlayer(dRow, dCol) {
+            if (!isMazeGameActive) return;
+
+            const newPlayerRow = playerPos.row + dRow;
+            const newPlayerCol = playerPos.col + dCol;
+
+            if (newPlayerRow >= 0 && newPlayerRow < currentMaze.grid.length &&
+                newPlayerCol >= 0 && newPlayerCol < currentMaze.grid[0].length &&
+                currentMaze.grid[newPlayerRow][newPlayerCol] !== MAZE_WALL) {
+
+                playerPos.row = newPlayerRow;
+                playerPos.col = newPlayerCol;
+                drawMaze(); 
+
+                if (playerPos.row === lionPos.row && playerPos.col === lionPos.col) {
+                    gameOverMaze();
+                    return;
+                }
+
+                moveLion();
+
+                if (playerPos.row === lionPos.row && playerPos.col === lionPos.col) {
+                    gameOverMaze();
+                    return;
+                }
+
+                if (currentMaze.grid[playerPos.row][playerPos.col] === MAZE_END) {
+                    isMazeGameActive = false;
+                    showMessageBox('Level Complete!', `You guided the gorilla to the banana on Level ${currentLevelIndex + 1}!`);
+                    unlockAchievement('mazeEscapee'); 
+                    setTimeout(() => {
+                        loadMazeLevel(currentLevelIndex + 1); 
+                        if (currentLevelIndex < mazeLevels.length) { 
+                            isMazeGameActive = true;
+                        }
+                    }, 1500);
+                    return;
+                }
+            }
+        }
+
+        function handleMazeKeyDown(event) {
+            switch (event.key) {
+                case 'ArrowUp':
+                case 'w':
+                    movePlayer(-1, 0);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    movePlayer(1, 0);
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                    movePlayer(0, -1);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    movePlayer(0, 1);
+                    break;
+            }
+        }
+
+        let mazeTouchStartX = 0;
+        let mazeTouchStartY = 0;
+
+        mazeCanvas.addEventListener('touchstart', (e) => {
+            mazeTouchStartX = e.touches[0].clientX;
+            mazeTouchStartY = e.touches[0].clientY;
+            e.preventDefault(); 
+        }, { passive: false });
+
+        mazeCanvas.addEventListener('touchend', (e) => {
+            if (!isMazeGameActive) return;
+
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+
+            const dx = touchEndX - mazeTouchStartX;
+            const dy = touchEndY - mazeTouchStartY;
+
+            const minSwipeDistance = 30; 
+
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > minSwipeDistance) {
+                
+                if (dx > 0) {
+                    movePlayer(0, 1); 
+                } else {
+                    movePlayer(0, -1); 
+                }
+            } else if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > minSwipeDistance) {
+                
+                if (dy > 0) {
+                    movePlayer(1, 0); 
+                } else {
+                    movePlayer(-1, 0); 
+                }
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+
+        function startMazeGame() {
+            if (isMazeGameActive) {
+                showMessageBox('Game Running', 'The maze game is already in progress!');
+                return;
+            }
+            isMazeGameActive = true;
+            currentLevelIndex = 0; 
+            loadMazeLevel(currentLevelIndex);
+            document.addEventListener('keydown', handleMazeKeyDown);
+        }
+
+        function resetMazeGame() {
+            isMazeGameActive = false; 
+            loadMazeLevel(currentLevelIndex); 
+            isMazeGameActive = true; 
+            document.removeEventListener('keydown', handleMazeKeyDown); 
+            document.addEventListener('keydown', handleMazeKeyDown); 
+        }
+
+        function stopMazeGame() {
+            isMazeGameActive = false;
+            document.removeEventListener('keydown', handleMazeKeyDown);
+        }
+
+        const DD_BLOCK_TYPE = {
+            AIR: 0,
+            GROUND: 1, 
+            SPIKES: 2, 
+            GOAL: 3,
+            START: 4,
+            INVISIBLE_BLOCK: 5, 
+            DISAPPEARING_BLOCK: 6, 
+            FAKE_GROUND: 7, 
+            LAVA: 8 
+        };
+
+        
+        const ddLevels = [
+            { 
+                width: 20, height: 10,
+                map: [
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { x: 1, y: 6.5 }, 
+                goal: { x: 18, y: 6.5 },
+                triggers: []
+            },
+            { 
+                width: 20, height: 10,
+                map: [
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,1,6,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1], 
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { x: 1, y: 6.5 },
+                goal: { x: 18, y: 6.5 },
+                triggers: [
+                    { 
+                        type: 'onPlayerTouch',
+                        condition: { row: 6, col: 4 }, 
+                        action: 'disappear', 
+                        target: { row: 6, col: 4 }
+                    }
+                ]
+            },
+            { 
+                width: 20, height: 10,
+                map: [
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1], 
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { x: 1, y: 6.5 },
+                goal: { x: 18, y: 6.5 },
+                triggers: [
+                    { 
+                        type: 'onLevelLoad',
+                        action: 'addBlock',
+                        target: { row: 6, col: 5 },
+                        blockType: DD_BLOCK_TYPE.INVISIBLE_BLOCK
+                    },
+                    { 
+                        type: 'onPlayerTouch',
+                        condition: { row: 6, col: 10 },
+                        action: 'changeBlockType',
+                        target: { row: 6, col: 10 },
+                        newBlockType: DD_BLOCK_TYPE.SPIKES
+                    }
+                ]
+            },
+            { 
+                width: 20, height: 10,
+                map: [
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], 
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8], 
+                    [8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8]
+                ],
+                start: { x: 1, y: 6.5 },
+                goal: { x: 18, y: 6.5 },
+                triggers: [
+                    {
+                        type: 'onLevelLoad',
+                        action: 'changeBlockType',
+                        target: { row: 6, col: 5, width: 3, height: 1 },
+                        newBlockType: DD_BLOCK_TYPE.FAKE_GROUND
+                    }
+                ]
+            },
+            {
+                width: 25, height: 10,
+                map: [
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { x: 1, y: 6.5 },
+                goal: { x: 23, y: 6.5 },
+                triggers: [
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 9 }, blockType: DD_BLOCK_TYPE.INVISIBLE_BLOCK },
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 12 }, blockType: DD_BLOCK_TYPE.INVISIBLE_BLOCK },
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 15 }, blockType: DD_BLOCK_TYPE.INVISIBLE_BLOCK }
+                ]
+            },
+            { 
+                width: 25, height: 12,
+                map: [
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,8,8,8,8,8,8,8,8,8,8,8,8,8,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,8,8,8,8,8,8,8,8,8,8,8,8,8,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,8,8,8,8,8,8,8,8,8,8,8,8,8,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,8,8,8,8,8,8,8,8,8,8,8,8,8,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { x: 1, y: 6.5 },
+                goal: { x: 23, y: 6.5 },
+                triggers: [
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 6, width: 13, height: 1 }, blockType: DD_BLOCK_TYPE.DISAPPEARING_BLOCK },
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 6, width: 13, height: 1 }, action: 'disappear', target: { row: 6, col: 6, width: 13, height: 1 } }
+                ]
+            },
+            { 
+                width: 25, height: 10,
+                map: [
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { x: 1, y: 6.5 },
+                goal: { x: 23, y: 6.5 },
+                triggers: [
+                    
+                    { type: 'onLevelLoad', action: 'changeBlockType', target: { row: 6, col: 7 }, newBlockType: DD_BLOCK_TYPE.INVISIBLE_BLOCK },
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 7 }, action: 'changeBlockType', target: { row: 6, col: 7 }, newBlockType: DD_BLOCK_TYPE.SPIKES },
+                    
+                    { type: 'onLevelLoad', action: 'changeBlockType', target: { row: 4, col: 10 }, newBlockType: DD_BLOCK_TYPE.FAKE_GROUND },
+                    { type: 'onLevelLoad', action: 'changeBlockType', target: { row: 4, col: 11 }, newBlockType: DD_BLOCK_TYPE.FAKE_GROUND },
+                    { type: 'onLevelLoad', action: 'changeBlockType', target: { row: 4, col: 12 }, newBlockType: DD_BLOCK_TYPE.FAKE_GROUND }
+                ]
+            },
+            { 
+                width: 30, height: 10,
+                map: [
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                    [1,1,1,1,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { x: 1, y: 6.5 },
+                goal: { x: 28, y: 6.5 },
+                triggers: [
+                    
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 4, width: 24, height: 1 }, blockType: DD_BLOCK_TYPE.INVISIBLE_BLOCK },
+                    
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 10, width: 2, height: 1 }, action: 'changeBlockType', target: { row: 6, col: 10, width: 2, height: 1 }, newBlockType: DD_BLOCK_TYPE.LAVA },
+                    
+                    { type: 'onLevelLoad', action: 'changeBlockType', target: { row: 6, col: 15 }, newBlockType: DD_BLOCK_TYPE.GROUND }
+                ]
+            },
+            { 
+                width: 25, height: 10,
+                map: [
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                    [1,1,1,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { x: 1, y: 6.5 },
+                goal: { x: 24, y: 6.5 },
+                triggers: [
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 4 }, blockType: DD_BLOCK_TYPE.DISAPPEARING_BLOCK },
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 7 }, blockType: DD_BLOCK_TYPE.DISAPPEARING_BLOCK },
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 10 }, blockType: DD_BLOCK_TYPE.DISAPPEARING_BLOCK },
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 13 }, blockType: DD_BLOCK_TYPE.DISAPPEARING_BLOCK },
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 16 }, blockType: DD_BLOCK_TYPE.DISAPPEARING_BLOCK },
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 19 }, blockType: DD_BLOCK_TYPE.DISAPPEARING_BLOCK },
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 22 }, blockType: DD_BLOCK_TYPE.DISAPPEARING_BLOCK },
+
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 4 }, action: 'disappear', target: { row: 6, col: 4 } },
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 7 }, action: 'disappear', target: { row: 6, col: 7 } },
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 10 }, action: 'disappear', target: { row: 6, col: 10 } },
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 13 }, action: 'disappear', target: { row: 6, col: 13 } },
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 16 }, action: 'disappear', target: { row: 6, col: 16 } },
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 19 }, action: 'disappear', target: { row: 6, col: 19 } },
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 22 }, action: 'disappear', target: { row: 6, col: 22 } }
+                ]
+            },
+            { 
+                width: 30, height: 12,
+                map: [
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                    [1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+                    [1,1,1,1,1,1,1,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+                ],
+                start: { x: 1, y: 6.5 },
+                goal: { x: 28, y: 6.5 },
+                triggers: [
+                   
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 7 }, blockType: DD_BLOCK_TYPE.INVISIBLE_BLOCK },
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 7 }, action: 'changeBlockType', target: { row: 6, col: 7 }, newBlockType: DD_BLOCK_TYPE.SPIKES },
+
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 10 }, blockType: DD_BLOCK_TYPE.DISAPPEARING_BLOCK },
+                    { type: 'onPlayerTouch', condition: { row: 6, col: 10 }, action: 'disappear', target: { row: 6, col: 10 } },
+
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 13 }, blockType: DD_BLOCK_TYPE.INVISIBLE_BLOCK },
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 6, col: 14 }, blockType: DD_BLOCK_TYPE.INVISIBLE_BLOCK },
+
+                    { type: 'onLevelLoad', action: 'changeBlockType', target: { row: 6, col: 17 }, newBlockType: DD_BLOCK_TYPE.FAKE_GROUND },
+                    { type: 'onLevelLoad', action: 'changeBlockType', target: { row: 6, col: 18 }, newBlockType: DD_BLOCK_TYPE.FAKE_GROUND },
+
+                    
+                    { type: 'onLevelLoad', action: 'addBlock', target: { row: 4, col: 25 }, blockType: DD_BLOCK_TYPE.GROUND }
+                ]
+            }
+        ];
+
+        let ddCurrentLevelIndex = 0;
+        let ddPlayer = {};
+        let ddLevelMap = []; 
+        let ddGameActive = false;
+        let ddAnimationFrameId;
+        let ddKeys = {}; 
+        let ddPlayerVelocityY = 0;
+        let ddPlayerOnGround = false;
+        const DD_GRAVITY = 0.5;
+        const DD_JUMP_POWER = -10; 
+        const DD_MOVE_SPEED = 3;
+        const DD_BLOCK_SIZE = 40; 
+        const DD_PLAYER_WIDTH = 25; 
+        const DD_PLAYER_HEIGHT = 35; 
+
+        const deceptiveDepthsCanvas = document.getElementById('deceptiveDepthsCanvas');
+        const ddCtx = deceptiveDepthsCanvas.getContext('2d');
+        const deceptiveDepthsStatus = document.getElementById('deceptiveDepthsStatus');
+
+        function ddPreprocessLevels() {
+            ddLevels.forEach(level => {
+                level.originalMap = level.map.map(row => [...row]);
+            });
+        }
+
+        function ddApplyTriggerAction(trigger, mapToModify) {
+            if (trigger.action === 'disappear' && trigger.target) {
+                if (trigger.target.width && trigger.target.height) { 
+                    for (let r = trigger.target.row; r < trigger.target.row + trigger.target.height; r++) {
+                        for (let c = trigger.target.col; c < trigger.target.col + trigger.target.width; c++) {
+                            if (mapToModify[r] && mapToModify[r][c] !== undefined) {
+                                mapToModify[r][c] = DD_BLOCK_TYPE.AIR;
+                            }
+                        }
+                    }
+                } else { 
+                    if (mapToModify[trigger.target.row] && mapToModify[trigger.target.row][trigger.target.col] !== undefined) {
+                        mapToModify[trigger.target.row][trigger.target.col] = DD_BLOCK_TYPE.AIR;
+                    }
+                }
+            } else if (trigger.action === 'changeBlockType' && trigger.target && trigger.newBlockType !== undefined) {
+                if (trigger.target.width && trigger.target.height) { 
+                    for (let r = trigger.target.row; r < trigger.target.row + trigger.target.height; r++) {
+                        for (let c = trigger.target.col; c < trigger.target.col + trigger.target.width; c++) {
+                            if (mapToModify[r] && mapToModify[r][c] !== undefined) {
+                                mapToModify[r][c] = trigger.newBlockType;
+                            }
+                        }
+                    }
+                } else { 
+                    if (mapToModify[trigger.target.row] && mapToModify[trigger.target.row][trigger.target.col] !== undefined) {
+                        mapToModify[trigger.target.row][trigger.target.col] = trigger.newBlockType;
+                    }
+                }
+            } else if (trigger.action === 'addBlock' && trigger.blockType !== undefined) {
+                if (mapToModify[trigger.target.row] && mapToModify[trigger.target.row][trigger.target.col] === DD_BLOCK_TYPE.AIR) {
+                    mapToModify[trigger.target.row][trigger.target.col] = trigger.blockType;
+                }
+            }
+        }
+
+
+        function loadDeceptiveDepthsLevel(levelIndex) {
+            if (levelIndex < 0 || levelIndex >= ddLevels.length) {
+                
+                showMessageBox('Congratulations!', 'You mastered all the deceptive depths! You truly are a trickster\'s nightmare!');
+                ddCurrentLevelIndex = 0; 
+                return;
+            }
+
+            ddCurrentLevelIndex = levelIndex;
+            const currentLevelData = ddLevels[ddCurrentLevelIndex];
+
+            ddPlayer.x = currentLevelData.start.x * DD_BLOCK_SIZE;
+            ddPlayer.y = currentLevelData.start.y * DD_BLOCK_SIZE - DD_PLAYER_HEIGHT; 
+            ddPlayer.width = DD_PLAYER_WIDTH;
+            ddPlayer.height = DD_PLAYER_HEIGHT;
+            ddPlayerVelocityY = 0;
+            ddPlayerOnGround = false;
+
+            ddLevelMap = currentLevelData.originalMap.map(row => [...row]);
+
+            currentLevelData.triggers.forEach(trigger => {
+                if (trigger.type === 'onLevelLoad') {
+                    ddApplyTriggerAction(trigger, ddLevelMap);
+                }
+            });
+
+            deceptiveDepthsCanvas.width = currentLevelData.width * DD_BLOCK_SIZE;
+            deceptiveDepthsCanvas.height = currentLevelData.height * DD_BLOCK_SIZE;
+
+            deceptiveDepthsStatus.textContent = `Level ${ddCurrentLevelIndex + 1}`;
+        }
+
+        function drawDeceptiveDepthsGame() {
+            ddCtx.clearRect(0, 0, deceptiveDepthsCanvas.width, deceptiveDepthsCanvas.height);
+            ddCtx.fillStyle = '#0f172a'; 
+            ddCtx.fillRect(0, 0, deceptiveDepthsCanvas.width, deceptiveDepthsCanvas.height);
+
+            for (let row = 0; row < ddLevelMap.length; row++) {
+                for (let col = 0; col < ddLevelMap[row].length; col++) {
+                    const blockType = ddLevelMap[row][col];
+                    let color = '';
+                    let emoji = '';
+                    let drawBlock = true; 
+
+                    switch (blockType) {
+                        case DD_BLOCK_TYPE.GROUND:
+                            color = '#4a5568'; 
+                            break;
+                        case DD_BLOCK_TYPE.SPIKES:
+                            color = '#e53e3e'; 
+                            emoji = '🔺'; 
+                            break;
+                        case DD_BLOCK_TYPE.LAVA:
+                            color = '#FF4500'; 
+                            emoji = '♨️'; 
+                            break;
+                        case DD_BLOCK_TYPE.GOAL:
+                            color = '#68d391'; 
+                            emoji = '🏁';
+                            break;
+                        case DD_BLOCK_TYPE.START:
+                            color = '#38a169'; 
+                            break;
+                        case DD_BLOCK_TYPE.INVISIBLE_BLOCK:
+                            drawBlock = false; 
+                            break;
+                        case DD_BLOCK_TYPE.DISAPPEARING_BLOCK:
+                            color = '#f6ad55';
+                            break;
+                        case DD_BLOCK_TYPE.FAKE_GROUND:
+                            color = '#4a5568'; 
+                            break;
+                        case DD_BLOCK_TYPE.AIR:
+                        default:
+                            drawBlock = false; 
+                            break;
+                    }
+
+                    if (drawBlock) {
+                        ddCtx.fillStyle = color;
+                        ddCtx.fillRect(col * DD_BLOCK_SIZE, row * DD_BLOCK_SIZE, DD_BLOCK_SIZE, DD_BLOCK_SIZE);
+                        ddCtx.strokeStyle = '#2d3748'; 
+                        ddCtx.strokeRect(col * DD_BLOCK_SIZE, row * DD_BLOCK_SIZE, DD_BLOCK_SIZE, DD_BLOCK_SIZE);
+                    }
+
+                    if (emoji) {
+                        ddCtx.font = `${DD_BLOCK_SIZE * 0.7}px "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", Arial, sans-serif`;
+                        ddCtx.textAlign = 'center';
+                        ddCtx.textBaseline = 'middle';
+                        ddCtx.fillText(emoji, col * DD_BLOCK_SIZE + DD_BLOCK_SIZE / 2, row * DD_BLOCK_SIZE + DD_BLOCK_SIZE / 2);
+                    }
+                }
+            }
+
+            ddCtx.font = `${DD_PLAYER_HEIGHT * 0.9}px "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", Arial, sans-serif`;
+            ddCtx.textAlign = 'center';
+            ddCtx.textBaseline = 'middle';
+            ddCtx.fillText('🏃', ddPlayer.x + ddPlayer.width / 2, ddPlayer.y + ddPlayer.height / 2);
+        }
+
+        function ddCheckCollision(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                   obj1.x + obj1.width > obj2.x &&
+                   obj1.y < obj2.y + obj2.height &&
+                   obj1.y + obj1.height > obj2.y;
+        }
+
+        function ddGetBlockAt(x, y) {
+            const col = Math.floor(x / DD_BLOCK_SIZE);
+            const row = Math.floor(y / DD_BLOCK_SIZE);
+
+            if (row >= 0 && row < ddLevelMap.length && col >= 0 && col < ddLevelMap[0].length) {
+                return {
+                    type: ddLevelMap[row][col],
+                    row: row,
+                    col: col,
+                    x: col * DD_BLOCK_SIZE,
+                    y: row * DD_BLOCK_SIZE,
+                    width: DD_BLOCK_SIZE,
+                    height: DD_BLOCK_SIZE
+                };
+            }
+            return { type: DD_BLOCK_TYPE.AIR }; 
+        }
+
+        function ddUpdateDeceptiveDepthsGame() {
+            if (!ddGameActive) return;
+
+            ddPlayerVelocityY += DD_GRAVITY;
+            ddPlayer.y += ddPlayerVelocityY;
+
+            ddPlayerOnGround = false;
+
+            let playerRect = { x: ddPlayer.x, y: ddPlayer.y, width: ddPlayer.width, height: ddPlayer.height };
+
+            let minBlockRow = Math.floor(playerRect.y / DD_BLOCK_SIZE);
+            let maxBlockRow = Math.floor((playerRect.y + playerRect.height - 1) / DD_BLOCK_SIZE);
+            let minBlockCol = Math.floor(playerRect.x / DD_BLOCK_SIZE);
+            let maxBlockCol = Math.floor((playerRect.x + playerRect.width - 1) / DD_BLOCK_SIZE);
+
+            minBlockRow = Math.max(0, minBlockRow);
+            maxBlockRow = Math.min(ddLevels[ddCurrentLevelIndex].height - 1, maxBlockRow);
+            minBlockCol = Math.max(0, minBlockCol);
+            maxBlockCol = Math.min(ddLevels[ddCurrentLevelIndex].width - 1, maxBlockCol);
+
+
+            for (let r = minBlockRow; r <= maxBlockRow; r++) {
+                for (let c = minBlockCol; c <= maxBlockCol; c++) {
+                    const block = ddGetBlockAt(c * DD_BLOCK_SIZE, r * DD_BLOCK_SIZE);
+
+                    if (block.type === DD_BLOCK_TYPE.GROUND || block.type === DD_BLOCK_TYPE.INVISIBLE_BLOCK || block.type === DD_BLOCK_TYPE.DISAPPEARING_BLOCK) {
+                        if (ddCheckCollision(playerRect, block)) {
+                            if (ddPlayerVelocityY > 0) { 
+                                ddPlayer.y = block.y - ddPlayer.height;
+                                ddPlayerVelocityY = 0;
+                                ddPlayerOnGround = true;
+
+                                if (block.type === DD_BLOCK_TYPE.DISAPPEARING_BLOCK) {
+                                    ddLevelMap[block.row][block.col] = DD_BLOCK_TYPE.AIR; 
+                                }
+                            }
+                            else if (ddPlayerVelocityY < 0) { 
+                                ddPlayer.y = block.y + block.height;
+                                ddPlayerVelocityY = 0;
+                            }
+                            playerRect.y = ddPlayer.y; 
+                        }
+                    }
+                }
+            }
+
+
+            let dx = 0;
+            if (ddKeys['ArrowLeft'] || ddKeys['a']) {
+                dx = -DD_MOVE_SPEED;
+            }
+            if (ddKeys['ArrowRight'] || ddKeys['d']) {
+                dx = DD_MOVE_SPEED;
+            }
+            ddPlayer.x += dx;
+
+            playerRect = { x: ddPlayer.x, y: ddPlayer.y, width: ddPlayer.width, height: ddPlayer.height };
+
+            minBlockCol = Math.floor(playerRect.x / DD_BLOCK_SIZE);
+            maxBlockCol = Math.floor((playerRect.x + playerRect.width - 1) / DD_BLOCK_SIZE);
+            minBlockRow = Math.floor(playerRect.y / DD_BLOCK_SIZE);
+            maxBlockRow = Math.floor((playerRect.y + playerRect.height - 1) / DD_BLOCK_SIZE);
+
+            minBlockCol = Math.max(0, minBlockCol);
+            maxBlockCol = Math.min(ddLevels[ddCurrentLevelIndex].width - 1, maxBlockCol);
+            minBlockRow = Math.max(0, minBlockRow);
+            maxBlockRow = Math.min(ddLevels[ddCurrentLevelIndex].height - 1, maxBlockRow);
+
+
+            for (let r = minBlockRow; r <= maxBlockRow; r++) {
+                for (let c = minBlockCol; c <= maxBlockCol; c++) {
+                    const block = ddGetBlockAt(c * DD_BLOCK_SIZE, r * DD_BLOCK_SIZE);
+
+                    if ((block.type === DD_BLOCK_TYPE.GROUND || block.type === DD_BLOCK_TYPE.INVISIBLE_BLOCK || block.type === DD_BLOCK_TYPE.DISAPPEARING_BLOCK) && ddCheckCollision(playerRect, block)) {
+                        
+                        if (dx > 0) { 
+                            ddPlayer.x = block.x - ddPlayer.width;
+                        }
+                        else if (dx < 0) { 
+                            ddPlayer.x = block.x + block.width;
+                        }
+                        playerRect.x = ddPlayer.x;
+                    }
+                }
+            }
+
+            minBlockRow = Math.floor(ddPlayer.y / DD_BLOCK_SIZE);
+            maxBlockRow = Math.floor((ddPlayer.y + ddPlayer.height - 1) / DD_BLOCK_SIZE);
+            minBlockCol = Math.floor(ddPlayer.x / DD_BLOCK_SIZE);
+            maxBlockCol = Math.floor((ddPlayer.x + ddPlayer.width - 1) / DD_BLOCK_SIZE);
+
+            minBlockCol = Math.max(0, minBlockCol);
+            maxBlockCol = Math.min(ddLevels[ddCurrentLevelIndex].width - 1, maxBlockCol);
+            minBlockRow = Math.max(0, minBlockRow);
+            maxBlockRow = Math.min(ddLevels[ddCurrentLevelIndex].height - 1, maxBlockRow);
+
+
+            for (let r = minBlockRow; r <= maxBlockRow; r++) {
+                for (let c = minBlockCol; c <= maxBlockCol; c++) {
+                    const block = ddGetBlockAt(c * DD_BLOCK_SIZE, r * DD_BLOCK_SIZE);
+
+                    if (block.type === DD_BLOCK_TYPE.SPIKES || block.type === DD_BLOCK_TYPE.LAVA) {
+                        ddGameOver();
+                        return;
+                    }
+
+                    ddLevels[ddCurrentLevelIndex].triggers.forEach(trigger => {
+                        if (trigger.type === 'onPlayerTouch' && trigger.condition) {
+                            let triggerColStart = trigger.condition.col;
+                            let triggerRowStart = trigger.condition.row;
+                            let triggerColEnd = triggerColStart + (trigger.condition.width || 1) -1;
+                            let triggerRowEnd = triggerRowStart + (trigger.condition.height || 1) -1;
+
+                            if (c >= triggerColStart && c <= triggerColEnd && r >= triggerRowStart && r <= triggerRowEnd) {
+                                ddApplyTriggerAction(trigger, ddLevelMap);
+                            }
+                        }
+                    });
+                }
+            }
+
+
+            if (ddPlayer.x < -ddPlayer.width || ddPlayer.x > deceptiveDepthsCanvas.width || ddPlayer.y > deceptiveDepthsCanvas.height) {
+                ddGameOver();
+                return;
+            }
+
+
+            
+            const goalBlock = ddLevels[ddCurrentLevelIndex].goal;
+            const goalRect = { x: goalBlock.x * DD_BLOCK_SIZE, y: goalBlock.y * DD_BLOCK_SIZE, width: DD_BLOCK_SIZE, height: DD_BLOCK_SIZE };
+
+            if (ddCheckCollision(ddPlayer, goalRect)) {
+                ddNextLevel();
+                return;
+            }
+
+            drawDeceptiveDepthsGame();
+            ddAnimationFrameId = requestAnimationFrame(ddUpdateDeceptiveDepthsGame);
+        }
+
+        function ddHandleDeceptiveDepthsKeyDown(event) {
+            ddKeys[event.key] = true;
+            if ((event.key === 'ArrowUp' || event.key === 'w') && ddPlayerOnGround) {
+                ddPlayerVelocityY = DD_JUMP_POWER;
+                ddPlayerOnGround = false; 
+            }
+        }
+
+        function ddHandleDeceptiveDepthsKeyUp(event) {
+            ddKeys[event.key] = false;
+        }
+
+        let ddTouchStartX = 0;
+        let ddTouchStartY = 0;
+        let ddTouchMoveInitialX = 0; 
+        let ddTouchMoveIsActive = false;
+        deceptiveDepthsCanvas.addEventListener('touchstart', (e) => {
+            if (!ddGameActive) return;
+            ddTouchStartX = e.touches[0].clientX;
+            ddTouchStartY = e.touches[0].clientY;
+            ddTouchMoveInitialX = ddTouchStartX; 
+            ddTouchMoveIsActive = false; 
+           
+        }, { passive: true }); 
+
+        deceptiveDepthsCanvas.addEventListener('touchmove', (e) => {
+            if (!ddGameActive) return;
+            e.preventDefault(); 
+
+            const touchCurrentX = e.touches[0].clientX;
+            const horizontalThreshold = 10; 
+
+            if (Math.abs(touchCurrentX - ddTouchMoveInitialX) > horizontalThreshold) {
+                ddTouchMoveIsActive = true; 
+
+                if (touchCurrentX > ddTouchMoveInitialX) { 
+                    ddKeys['ArrowRight'] = true;
+                    ddKeys['ArrowLeft'] = false;
+                } else { 
+                    ddKeys['ArrowLeft'] = true;
+                    ddKeys['ArrowRight'] = false;
+                }
+            } else {
+                ddKeys['ArrowLeft'] = false;
+                ddKeys['ArrowRight'] = false;
+            }
+
+            const touchCurrentY = e.touches[0].clientY;
+            const dy = touchCurrentY - ddTouchStartY;
+            const minJumpSwipeDistance = -30;
+
+            if (dy < minJumpSwipeDistance && ddPlayerOnGround) {
+                ddPlayerVelocityY = DD_JUMP_POWER;
+                ddPlayerOnGround = false;
+                ddTouchStartY = touchCurrentY; 
+            }
+        }, { passive: false }); 
+
+        deceptiveDepthsCanvas.addEventListener('touchend', (e) => {
+            if (!ddGameActive) return;
+            ddKeys['ArrowLeft'] = false;
+            ddKeys['ArrowRight'] = false;
+            ddTouchMoveIsActive = false; 
+        });
+
+
+        function ddStartDeceptiveDepthsGame() {
+            if (ddGameActive) {
+                showMessageBox('Game Running', 'Deceptive Depths is already in progress!');
+                return;
+            }
+            ddGameActive = true;
+            ddCurrentLevelIndex = 0;
+            loadDeceptiveDepthsLevel(ddCurrentLevelIndex);
+            document.addEventListener('keydown', ddHandleDeceptiveDepthsKeyDown);
+            document.addEventListener('keyup', ddHandleDeceptiveDepthsKeyUp);
+            ddAnimationFrameId = requestAnimationFrame(ddUpdateDeceptiveDepthsGame);
+        }
+
+        function ddResetDeceptiveDepthsGame() {
+            ddStopDeceptiveDepthsGame();
+            ddCurrentLevelIndex = 0;
+            ddStartDeceptiveDepthsGame();
+        }
+
+        function ddNextLevel() {
+            ddStopDeceptiveDepthsGame();
+            ddCurrentLevelIndex++;
+            if (ddCurrentLevelIndex < ddLevels.length) {
+                loadDeceptiveDepthsLevel(ddCurrentLevelIndex);
+                ddGameActive = true;
+                ddAnimationFrameId = requestAnimationFrame(ddUpdateDeceptiveDepthsGame);
+            } else {
+                showMessageBox('Victory!', 'You\'ve conquered all the Deceptive Depths!', ddResetDeceptiveDepthsGame); // Offer to restart from level 1
+                ddGameActive = false; 
+                ddCurrentLevelIndex = 0; 
+            }
+        }
+
+        function ddGameOver() {
+            ddStopDeceptiveDepthsGame();
+            showMessageBox('Game Over!', 'You fell into a trap! Try again from the start of the level.', ddResetLevelAfterGameOver); // Pass callback
+        }
+
+        function ddResetLevelAfterGameOver() {
+            loadDeceptiveDepthsLevel(ddCurrentLevelIndex); 
+            ddGameActive = true;
+            ddAnimationFrameId = requestAnimationFrame(ddUpdateDeceptiveDepthsGame);
+        }
+
+
+        function ddStopDeceptiveDepthsGame() {
+            if (ddAnimationFrameId) {
+                cancelAnimationFrame(ddAnimationFrameId);
+            }
+            ddGameActive = false;
+            document.removeEventListener('keydown', ddHandleDeceptiveDepthsKeyDown);
+            document.removeEventListener('keyup', ddHandleDeceptiveDepthsKeyUp);
+        }
+
+
+       
+        window.onload = function() {
+            drawTicTacToeBoard(); 
+            ticTacToeStatus.textContent = `Player ${currentPlayer}'s Turn`;
+            ticTacToeStatus.style.color = '#63b3ed';
+            initColourDominationBoard(); 
+            initChessBoard(); 
+            updateClickerDisplay(); 
+            renderAchievements(); 
+
+            loadMazeLevel(0); 
+            stopMazeGame(); 
+
+            ddPreprocessLevels();
+            loadDeceptiveDepthsLevel(0); 
+            ddStopDeceptiveDepthsGame();
+        };
+    </script>
+</body>
+</html>
